@@ -15,7 +15,7 @@ public typealias IdToken = String
 // MARK: - WanServer Delegate protocol
 // --------------------------------------------------------------------------------
 
-public protocol WanServerDelegate : class {    
+public protocol WanServerDelegate: AnyObject {    
     func wanSettings(name: String, call: String)
     func wanConnectReady(handle: String, serial: String)
     func wanTestResults(_ results: WanTestConnectionResults)

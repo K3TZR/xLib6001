@@ -10,7 +10,7 @@ import Foundation
 public struct GuiClient {
   // ----------------------------------------------------------------------------
   // MARK: - Public properties
-    
+
   public var clientId : String? {
     get { Api.objectQ.sync { _clientId } }
     set { if newValue != clientId { Api.objectQ.sync(flags: .barrier) { _clientId = newValue }}}}

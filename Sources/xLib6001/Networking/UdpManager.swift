@@ -10,7 +10,7 @@ import Foundation
 import CocoaAsyncSocket
 
 /// Delegate protocol for the UdpManager class
-protocol UdpManagerDelegate                 : class {
+protocol UdpManagerDelegate: AnyObject {
     func didBind(receivePort: UInt16, sendPort: UInt16)
     func didUnbind(reason: String)
     func udpStreamHandler(_ vita: Vita)

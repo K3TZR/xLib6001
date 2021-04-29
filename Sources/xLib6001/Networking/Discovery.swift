@@ -241,9 +241,9 @@ public final class Discovery: NSObject {
         // examine each GuiClient in the new packet
         for client in newPacket.guiClients {
             // is it in the current packet?
-            if findGuiClient(by: client.handle, in: radios[index].packet.guiClients) == nil {
+            if findGuiClient(by: client.handle, in: radios[index].guiClients) == nil {
                 // NO, it must be added to the current packet
-                radios[index].packet.guiClients.append(client)
+                radios[index].guiClients.append(client)
                 
                 // log and notify for GuiClient addition
                 _log("Discovery, guiClient added:   Handle = \(client.handle.hex), Station = \(client.station), Packet = \(newPacket.connectionString)", .info, #function, #file, #line)
@@ -262,13 +262,13 @@ public final class Discovery: NSObject {
     
     private func processRemovals(_ newPacket: DiscoveryPacket, _ index: Int) {
         // examine each GuiClient in the current packet
-        for (i, client) in radios[index].packet.guiClients.enumerated().reversed() {
+        for (i, client) in radios[index].guiClients.enumerated().reversed() {
             // is it in the new packet?
             if findGuiClient(by: client.handle, in: newPacket.guiClients) == nil {
                 // NO, it must be removed from the current packet
                 let station = client.station
                 let handle = client.handle
-                radios[index].packet.guiClients.remove(at: i)
+                radios[index].guiClients.remove(at: i)
                 
                 // log and notify for GuiClient removal
                 _log("Discovery, guiClient removed: Handle = \(handle.hex), Station = \(station), Packet = \(newPacket.connectionString)", .info, #function, #file, #line)
@@ -333,9 +333,13 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
             // update and notify for GuiClient additions / removals
             processAdditions(newPacket, index)
             processRemovals(newPacket, index)
+
+            radios[index].guiClients = newPacket.guiClients
             
         } else {
             // NO, previously unknown radio
+            let newRadio = Radio(newPacket)
+            newRadio.guiClients = newPacket.guiClients
             radios.append(Radio(newPacket))
             
             // notify for additions

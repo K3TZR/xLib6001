@@ -148,6 +148,7 @@ public final class Radio: ObservableObject {
         didSet { if !_suppress && frontSpeakerMute != oldValue { radioSetCmd( .frontSpeakerMute, frontSpeakerMute.as1or0) }}}
     @Published public var fullDuplexEnabled = false {
         didSet { if !_suppress && fullDuplexEnabled != oldValue { radioSetCmd( .fullDuplexEnabled, fullDuplexEnabled.as1or0) }}}
+    @Published public var guiClients = [GuiClient]()
     @Published public var headphoneGain = 0 {
         didSet { if !_suppress && headphoneGain != oldValue { mixerCmd( "headphone gain", headphoneGain) }}}
     @Published public var headphoneMute = false {
@@ -568,22 +569,22 @@ public final class Radio: ObservableObject {
             }
             var handleWasFound = false
             // find the guiClient with the specified handle
-            for (i, guiClient) in packet.guiClients.enumerated() where guiClient.handle == handle {
+            for (i, guiClient) in guiClients.enumerated() where guiClient.handle == handle {
                 handleWasFound = true
 
                 // update any fields that are present
-                if clientId != "" { packet.guiClients[i].clientId = clientId }
-                if program  != "" { packet.guiClients[i].program = program }
-                if station  != "" { packet.guiClients[i].station = station }
-                packet.guiClients[i].isLocalPtt = isLocalPtt
+                if clientId != "" { guiClients[i].clientId = clientId }
+                if program  != "" { guiClients[i].program = program }
+                if station  != "" { guiClients[i].station = station }
+                guiClients[i].isLocalPtt = isLocalPtt
 
-                guiClientWasEdited(handle, packet.guiClients[i])
+                guiClientWasEdited(handle, guiClients[i])
             }
 
             if handleWasFound == false {
                 // GuiClient with the specified handle was not found, add it
                 let client = GuiClient(handle: handle, station: station, program: program, clientId: clientId, isLocalPtt: isLocalPtt, isThisClient: handle == _api.connectionHandle)
-                packet.guiClients.append(client)
+                guiClients.append(client)
 
                 // log and notify of GuiClient update
                 _log("Radio,     guiClient added:   \(handle.hex), \(station), \(program), \(clientId), Packet = \(packet.connectionString)", .info, #function, #file, #line)

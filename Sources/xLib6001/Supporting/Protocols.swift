@@ -12,7 +12,7 @@ import Foundation
 // MARK: - Protocols
 
 /// Logging is deferred to the hosting application
-public protocol LogHandler: class {
+public protocol LogHandler: AnyObject {
     /// Method to process Log entries
     /// - Parameters:
     ///   - msg:        the message
@@ -27,7 +27,7 @@ public protocol LogHandler: class {
 /// Models for which there will only be one instance
 ///   Static Model objects are created / destroyed in the Radio class.
 ///   Static Model object properties are set in the instance's parseProperties method.
-protocol StaticModel: class {
+protocol StaticModel: AnyObject {
     /// Parse <key=value> arrays to set object properties
     /// - Parameter keyValues:  a KeyValues array containing object property values
     func parseProperties(_ keyValues: KeyValuesArray)
@@ -61,7 +61,7 @@ protocol DynamicModelWithStream: DynamicModel {
 }
 
 /// UDP Stream handler protocol
-public protocol StreamHandler: class {
+public protocol StreamHandler: AnyObject {
     /// Process a frame of Stream data
     /// - Parameter frame:        a frame of data
     func streamHandler<T>(_ frame: T)

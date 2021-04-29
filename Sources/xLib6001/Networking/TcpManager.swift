@@ -14,7 +14,7 @@ public typealias ReplyHandler = (_ command: String, _ seqNumber: SequenceNumber,
 public typealias ReplyTuple = (replyTo: ReplyHandler?, command: String)
 
 /// Delegate protocol for the TcpManager class
-protocol TcpManagerDelegate: class {
+protocol TcpManagerDelegate: AnyObject {
     // if any of theses are not needed, implement a stub in the delegate that does nothing
 
     /// A Tcp message was received the Radio

@@ -737,7 +737,7 @@ extension Radio {
     public func findHandle(for clientId: String?) -> Handle? {
         guard clientId != nil else { return nil }
         
-        for client in packet.guiClients where client.clientId == clientId {
+        for client in guiClients where client.clientId == clientId {
             return client.handle
         }
         return nil
@@ -748,7 +748,7 @@ extension Radio {
     /// - Returns:              a ClientId or nil
     ///
     public func findClientId(for station: String) -> String? {
-        for client in packet.guiClients {
+        for client in guiClients {
             if client.station == station { return client.clientId }
         }
         return nil

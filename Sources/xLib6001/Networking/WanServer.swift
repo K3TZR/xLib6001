@@ -504,8 +504,6 @@ public final class WanServer: NSObject, ObservableObject {
         
         for (i, _) in currentPacketList.enumerated() {
             currentPacketList[i].isWan = true
-            // populate it's guiClients
-            currentPacketList[i].guiClients = Discovery.sharedInstance.parseGuiClients(currentPacketList[i])
             // pass it to Discovery
             Discovery.sharedInstance.processPacket(currentPacketList[i])
         }

@@ -321,33 +321,37 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
     }
     
     func processPacket(_ newPacket: DiscoveryPacket) {
-        // is this a known radio?
-        if let index = findRadio(with: newPacket.serialNumber, and: newPacket.isWan) {
-            // YES, known radio, update various properties
-            radios[index].packet.lastSeen = Date()
-            radios[index].packet.guiClientStations = newPacket.guiClientStations
-            radios[index].packet.guiClientPrograms = newPacket.guiClientPrograms
-            radios[index].packet.guiClientHandles = newPacket.guiClientHandles
-            radios[index].packet.status = newPacket.status
-            
-            // update and notify for GuiClient additions / removals
-            processAdditions(newPacket, index)
-            processRemovals(newPacket, index)
 
-            radios[index].guiClients = newPacket.guiClients
-            
-        } else {
-            // NO, previously unknown radio
-            let newRadio = Radio(newPacket)
-            newRadio.guiClients = newPacket.guiClients
-            radios.append(Radio(newPacket))
-            
-            // notify for additions
-            processNewAdditions(newPacket)
-            
-            // log and notify for Radio addition
-            _log("Discovery, radio added:   \(newPacket.nickname) v\(newPacket.firmwareVersion) \(newPacket.connectionString)", .info, #function, #file, #line)
-            NC.post(.discoveredRadios, object: radios as Any?)
+        DispatchQueue.main.async { [self] in
+
+            // is this a known radio?
+            if let index = findRadio(with: newPacket.serialNumber, and: newPacket.isWan) {
+                // YES, known radio, update various properties
+                radios[index].packet.lastSeen = Date()
+                radios[index].packet.guiClientStations = newPacket.guiClientStations
+                radios[index].packet.guiClientPrograms = newPacket.guiClientPrograms
+                radios[index].packet.guiClientHandles = newPacket.guiClientHandles
+                radios[index].packet.status = newPacket.status
+
+                // update and notify for GuiClient additions / removals
+                processAdditions(newPacket, index)
+                processRemovals(newPacket, index)
+
+                radios[index].guiClients = newPacket.guiClients
+
+            } else {
+                // NO, previously unknown radio
+                let newRadio = Radio(newPacket)
+                newRadio.guiClients = newPacket.guiClients
+                radios.append(Radio(newPacket))
+
+                // notify for additions
+                processNewAdditions(newPacket)
+
+                // log and notify for Radio addition
+                _log("Discovery, radio added:   \(newPacket.nickname) v\(newPacket.firmwareVersion) \(newPacket.connectionString)", .info, #function, #file, #line)
+                NC.post(.discoveredRadios, object: radios as Any?)
+            }
         }
     }
 }

@@ -302,15 +302,6 @@ extension Meter: DynamicModel {
                         // did it change?
                         if adjNewValue != previousValue {
                             DispatchQueue.main.async { meter.value = adjNewValue }
-
-
-
-
-                            LogProxy.sharedInstance.libMessage("Meter, updated: \(meter.name) = \(meter.value)", .debug, #function, #file, #line)
-
-
-
-
                             // notify appropriate observers
                             switch meter.name {
                             // specific cases

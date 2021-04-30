@@ -74,7 +74,7 @@ public final class Api: ObservableObject {
     public var pingerEnabled = true
 
     public struct ApiConnectionParams {
-        public var packet : DiscoveryPacket
+        public var index : Int
         public var station: String = ""
         public var program: String = ""
         public var clientId: String?
@@ -251,54 +251,52 @@ public final class Api: ObservableObject {
     ///     - pendingDisconnect:    perform a disconnect before connecting
     ///
     
-    public func connect(_ packet          : DiscoveryPacket,
-                        station           : String = "",
-                        program           : String,
-                        clientId          : String? = nil,
-                        isGui             : Bool = true,
-                        wanHandle         : String = "",
-                        reducedDaxBw      : Bool = false,
-                        logState          : NSLogging = .normal,
-                        needsCwStream     : Bool = false,
-                        pendingDisconnect : PendingDisconnect = .none) -> Bool {
+    public func connect(_ index: Int,
+                        station: String = "",
+                        program: String,
+                        clientId: String? = nil,
+                        isGui: Bool = true,
+                        wanHandle: String = "",
+                        reducedDaxBw: Bool = false,
+                        logState: NSLogging = .normal,
+                        needsCwStream: Bool = false,
+                        pendingDisconnect: PendingDisconnect = .none) -> Bool {
         
         // must be in the Disconnected state to connect
         guard state == .clientDisconnected else { return false }
         
         // save the connection parameters
-        _params = ApiConnectionParams(packet            : packet,
-                                      station           : station,
-                                      program           : program,
-                                      clientId          : clientId,
-                                      isGui             : isGui,
-                                      wanHandle         : wanHandle,
-                                      reducedDaxBw      : reducedDaxBw,
-                                      logState          : logState,
-                                      needsCwStream     : needsCwStream,
-                                      pendingDisconnect : pendingDisconnect)
+        _params = ApiConnectionParams(index: index,
+                                      station: station,
+                                      program: program,
+                                      clientId: clientId,
+                                      isGui: isGui,
+                                      wanHandle: wanHandle,
+                                      reducedDaxBw: reducedDaxBw,
+                                      logState: logState,
+                                      needsCwStream: needsCwStream,
+                                      pendingDisconnect: pendingDisconnect)
         self.nsLogState = logState
         
-        // Create a Radio class
-        radio = Radio(packet)
-        
         // attempt to connect to the Radio
-        if tcp.connect(packet) {
-            
-            // Connected, check the versions
-            checkVersion(packet)
-            
-            _programName = program
-            _clientId = clientId
-            _clientStation = station
-            self.isGui = (pendingDisconnect == .none ? isGui : false)
-            self.reducedDaxBw = reducedDaxBw
-            self.needsNetCwStream = needsCwStream
-            
-        } else {
-            // Failed to connect
-            radio = nil
+        if let packet = Discovery.sharedInstance.radios[index].packet {
+            if tcp.connect(packet) {
+
+                // Connected, check the versions
+                checkVersion(packet)
+
+                _programName = program
+                _clientId = clientId
+                _clientStation = station
+                self.isGui = (pendingDisconnect == .none ? isGui : false)
+                self.reducedDaxBw = reducedDaxBw
+                self.needsNetCwStream = needsCwStream
+
+                return true
+            }
         }
-        return radio != nil
+        // connection failed
+        return false
     }
 
     /// Alternate form of connect
@@ -306,16 +304,16 @@ public final class Api: ObservableObject {
     ///
     public func connectAfterDisconnect(_ params: ApiConnectionParams) -> Bool {
         
-        return connect(params.packet,
-                       station           : params.station,
-                       program           : params.program,
-                       clientId          : params.clientId,
-                       isGui             : params.isGui,
-                       wanHandle         : params.wanHandle,
-                       reducedDaxBw      : params.reducedDaxBw,
-                       logState          : params.logState,
-                       needsCwStream     : params.needsCwStream,
-                       pendingDisconnect : .none)
+        return connect(params.index,
+                       station: params.station,
+                       program: params.program,
+                       clientId: params.clientId,
+                       isGui: params.isGui,
+                       wanHandle: params.wanHandle,
+                       reducedDaxBw: params.reducedDaxBw,
+                       logState: params.logState,
+                       needsCwStream: params.needsCwStream,
+                       pendingDisconnect: .none)
     }
 
     /// Change the state of the API

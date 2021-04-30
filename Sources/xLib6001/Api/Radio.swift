@@ -587,7 +587,7 @@ public final class Radio: ObservableObject {
                 guiClients.append(client)
 
                 // log and notify of GuiClient update
-                _log("Radio,     guiClient added:   \(handle.hex), \(station), \(program), \(clientId), Packet = \(packet.connectionString)", .info, #function, #file, #line)
+                _log("Radio,     guiClient added:   \(handle.hex), \(station), \(program), \(clientId), \(packet.connectionString)", .info, #function, #file, #line)
                 NC.post(.guiClientHasBeenAdded, object: client as Any?)
 
                 guiClientWasEdited(handle, client)
@@ -598,7 +598,7 @@ public final class Radio: ObservableObject {
     private func guiClientWasEdited(_ handle: Handle, _ client: GuiClient) {
         // log & notify if all essential properties are present
         if client.handle != 0 && client.clientId != nil && client.program != "" && client.station != "" {
-            _log("Radio,     guiClient updated: \(client.handle.hex), \(client.station), \(client.program), \(client.clientId!), Packet = \(packet.connectionString)", .info, #function, #file, #line)
+            _log("Radio,     guiClient updated: \(client.handle.hex), \(client.station), \(packet.connectionString), \(client.program), \(client.clientId!)", .info, #function, #file, #line)
             NC.post(.guiClientHasBeenUpdated, object: client as Any?)
         }
     }

@@ -232,21 +232,21 @@ public final class Discovery: NSObject {
     private func processNewAdditions(_ newRadio: Radio) {
         // log and notify for GuiClient addition(s)
         for client in newRadio.guiClients {
-            _log("Discovery, guiClient added:   Handle = \(client.handle.hex), Station = \(client.station), Packet = \(newRadio.packet.connectionString)", .info, #function, #file, #line)
+            _log("Discovery, guiClient added:   \(client.handle.hex), \(client.station), \(newRadio.packet.connectionString)", .info, #function, #file, #line)
             NC.post(.guiClientHasBeenAdded, object: client as Any?)
         }
     }
     
-    private func processAdditions(_ newGuiClients: [GuiClient], _ radio: Radio) {
+    private func processAdditions(_ newGuiClients: [GuiClient], _ index: Int) {
         // for each GuiClient in the new packet
         for client in newGuiClients {
             // is it known by the Radio?
-            if findGuiClient(by: client.handle, in: radio.guiClients) == nil {
+            if findGuiClient(by: client.handle, in: radios[index].guiClients) == nil {
                 // NO, it must be added to the Radio
-                radio.guiClients.append(client)
+                radios[index].guiClients.append(client)
                 
                 // log and notify for GuiClient addition
-                _log("Discovery, guiClient added:   Handle = \(client.handle.hex), Station = \(client.station), Packet = \(radio.packet.connectionString)", .info, #function, #file, #line)
+                _log("Discovery, guiClient added:   \(client.handle.hex), \(client.station), \(radios[index].packet.connectionString)", .info, #function, #file, #line)
                 NC.post(.guiClientHasBeenAdded, object: client as Any?)
             }
         }
@@ -260,18 +260,18 @@ public final class Discovery: NSObject {
         return nil    // not found
     }
     
-    private func processRemovals(_ newGuiClients: [GuiClient], _ radio: Radio) {
+    private func processRemovals(_ newGuiClients: [GuiClient], _ index: Int) {
         // for each GuiClient currently known by the Radio
-        for (i, client) in radio.guiClients.enumerated().reversed() {
+        for (i, client) in radios[index].guiClients.enumerated().reversed() {
             // is it in the new packet?
             if findGuiClient(by: client.handle, in: newGuiClients) == nil {
                 // NO, it must be removed from the Radio
                 let station = client.station
                 let handle = client.handle
-                radio.guiClients.remove(at: i)
+                radios[index].guiClients.remove(at: i)
                 
                 // log and notify for GuiClient removal
-                _log("Discovery, guiClient removed: Handle = \(handle.hex), Station = \(station), Packet = \(radio.packet.connectionString)", .info, #function, #file, #line)
+                _log("Discovery, guiClient removed: \(handle.hex), \(station), \(radios[index].packet.connectionString)", .info, #function, #file, #line)
                 NC.post(.guiClientHasBeenRemoved, object: client as Any?)
             }
         }
@@ -324,17 +324,16 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
             // is this a known radio?
             if let index = findRadio(with: newPacket.serialNumber, and: newPacket.isWan) {
                 // YES, known radio, update various properties
-                let radio = radios[index]
-                radio.packet.lastSeen = Date()
-                radio.packet.guiClientStations = newPacket.guiClientStations
-                radio.packet.guiClientPrograms = newPacket.guiClientPrograms
-                radio.packet.guiClientHandles = newPacket.guiClientHandles
-                radio.packet.status = newPacket.status
+                radios[index].packet.lastSeen = Date()
+                radios[index].packet.guiClientStations = newPacket.guiClientStations
+                radios[index].packet.guiClientPrograms = newPacket.guiClientPrograms
+                radios[index].packet.guiClientHandles = newPacket.guiClientHandles
+                radios[index].packet.status = newPacket.status
 
                 // update and notify for GuiClient additions / removals
                 let newGuiClients = parseGuiClients(newPacket)
-                processAdditions(newGuiClients, radio)
-                processRemovals(newGuiClients, radio)
+                processAdditions(newGuiClients, index)
+                processRemovals(newGuiClients, index)
 
             } else {
                 // NO, previously unknown radio

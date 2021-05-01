@@ -52,7 +52,7 @@ public final class Tnf: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token : String {
+    enum TnfTokens : String {
         case depth
         case frequency = "freq"
         case permanent
@@ -100,7 +100,7 @@ public final class Tnf: ObservableObject, Identifiable {
     ///   - token:      the parse token
     ///   - value:      the new value
     ///
-    private func tnfCmd(_ token: Token, _ value: Any) {
+    private func tnfCmd(_ token: TnfTokens, _ value: Any) {
         _api.send("tnf set " + "\(id) " + token.rawValue + "=\(value)")
     }
 }
@@ -162,7 +162,7 @@ extension Tnf: DynamicModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = TnfTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("Tnf, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

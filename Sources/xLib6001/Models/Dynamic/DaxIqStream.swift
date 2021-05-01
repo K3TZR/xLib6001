@@ -51,7 +51,7 @@ public final class DaxIqStream: ObservableObject, Identifiable {
     // ------------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum DaxIqTokens: String {
         case channel        = "daxiq_channel"
         case clientHandle   = "client_handle"
         case ip
@@ -91,7 +91,7 @@ public final class DaxIqStream: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
 
-    private func streamSet(_ token: Token, _ value: Any) {
+    private func streamSet(_ token: DaxIqTokens, _ value: Any) {
         _api.send("stream set \(id.hex) \(token.rawValue)=\(rate)")
     }
 }
@@ -150,7 +150,7 @@ extension DaxIqStream: DynamicModelWithStream {
         // process each key/value pair, <key=value>
         for property in properties {
 
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = DaxIqTokens(rawValue: property.key) else {
                 // unknown Key, log it and ignore the Key
                 _log("DaxIqStream, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

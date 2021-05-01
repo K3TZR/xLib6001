@@ -23,7 +23,7 @@ public final class Waveform: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum Token: String {
+    enum WaveformTokens: String {
         case waveformList = "installed_list"
     }
 
@@ -45,7 +45,7 @@ extension Waveform: StaticModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // Check for Unknown Keys
-            guard let token = Token(rawValue: property.key)  else {
+            guard let token = WaveformTokens(rawValue: property.key)  else {
                 // log it and ignore the Key
                 _log("Waveform, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

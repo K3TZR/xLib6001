@@ -189,9 +189,9 @@ public final class Radio: ObservableObject {
     public               let version: Version
     public private(set)  var sliceErrors = [String]()  // milliHz
     public private(set)  var uptime = 0
-    public private(set)  var radioType: RadioType? = .flex6700
+    public private(set)  var radioType: RadioTypes? = .flex6700
     
-    public enum RadioType : String {
+    public enum RadioTypes : String {
         case flex6300   = "flex-6300"
         case flex6400   = "flex-6400"
         case flex6400m  = "flex-6400m"
@@ -217,7 +217,7 @@ public final class Radio: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum ClientToken: String {
+    enum ClientTokens: String {
         case host
         case id                       = "client_id"
         case ip
@@ -225,16 +225,16 @@ public final class Radio: ObservableObject {
         case program
         case station
     }
-    enum DisplayToken: String {
+    enum DisplayTokens: String {
         case panadapter               = "pan"
         case waterfall
     }
-    enum EqApfToken: String {
+    enum EqApfTokens: String {
         case gain
         case mode
         case qFactor
     }
-    enum InfoToken: String {
+    enum InfoTokens: String {
         case atuPresent               = "atu_present"
         case callsign
         case chassisSerial            = "chassis_serial"
@@ -254,7 +254,7 @@ public final class Radio: ObservableObject {
         case screensaver
         case softwareVersion          = "software_ver"
     }
-    enum RadioToken: String {
+    enum RadioTokens: String {
         case backlight
         case bandPersistenceEnabled   = "band_persistence_enabled"
         case binauralRxEnabled        = "binaural_rx"
@@ -282,7 +282,7 @@ public final class Radio: ObservableObject {
         case snapTuneEnabled          = "snap_tune_enabled"
         case tnfsEnabled              = "tnf_enabled"
     }
-    enum RadioTokenCategory: String {
+    enum RadioTokenTypes: String {
         case filterSharpness  = "filter_sharpness"
         case staticNetParams  = "static_net_params"
         case oscillator
@@ -307,7 +307,7 @@ public final class Radio: ObservableObject {
         case state
         case tcxoPresent      = "tcxo_present"
     }
-    enum StatusToken : String {
+    enum StatusTokens: String {
         case amplifier
         case audioStream      = "audio_stream"  // (pre V3 only)
         case atu
@@ -337,7 +337,7 @@ public final class Radio: ObservableObject {
         case waveform
         case xvtr
     }
-    enum VersionToken: String {
+    enum VersionTokens: String {
         case fpgaMb           = "fpga-mb"
         case psocMbPa100      = "psoc-mbpa100"
         case psocMbTrx        = "psoc-mbtrx"
@@ -397,7 +397,7 @@ public final class Radio: ObservableObject {
         version = Version(packet.firmwareVersion)
         
         _api.delegate = self
-        radioType = RadioType(rawValue: packet.model.lowercased())
+        radioType = RadioTypes(rawValue: packet.model.lowercased())
         if radioType == nil { _log("Radio, unknown model: \(packet.model)", .warning, #function, #file, #line) }
         
         // initialize the static models (only one of each is ever created)
@@ -528,12 +528,12 @@ public final class Radio: ObservableObject {
         let currentMox = mox
         
         // if PTT_REQUESTED or TRANSMITTING
-        if state == Interlock.State.pttRequested.rawValue || state == Interlock.State.transmitting.rawValue {
+        if state == Interlock.States.pttRequested.rawValue || state == Interlock.States.transmitting.rawValue {
             // and mox not on, turn it on
             if currentMox == false { mox = true }
             
             // if READY or UNKEY_REQUESTED
-        } else if state == Interlock.State.ready.rawValue || state == Interlock.State.unKeyRequested.rawValue {
+        } else if state == Interlock.States.ready.rawValue || state == Interlock.States.unKeyRequested.rawValue {
             // and mox is on, turn it off
             if currentMox == true { mox = false  }
         }
@@ -737,7 +737,7 @@ public final class Radio: ObservableObject {
         let remainder = String(components[1][remainderIndex...])
         
         // Check for unknown Message Types
-        guard let token = StatusToken(rawValue: msgType)  else {
+        guard let token = StatusTokens(rawValue: msgType)  else {
             // log it and ignore the message
             _log("Radio, unknown status token: \(msgType)", .warning, #function, #file, #line)
             return
@@ -848,8 +848,8 @@ public final class Radio: ObservableObject {
     private func parseDisplay(_ radio: Radio, _ keyValues: KeyValuesArray, _ inUse: Bool = true) {
         switch keyValues[0].key {
         
-        case DisplayToken.panadapter.rawValue:  Panadapter.parseStatus(radio, keyValues, inUse)
-        case DisplayToken.waterfall.rawValue:   Waterfall.parseStatus(radio, keyValues, inUse)
+        case DisplayTokens.panadapter.rawValue:  Panadapter.parseStatus(radio, keyValues, inUse)
+        case DisplayTokens.waterfall.rawValue:   Waterfall.parseStatus(radio, keyValues, inUse)
             
         default:  _log("Radio, unknown display type: \(keyValues[0].key)", .warning, #function, #file, #line)
         }
@@ -985,7 +985,7 @@ public final class Radio: ObservableObject {
             // process each key/value pair, <key=value>
             for property in properties {
                 // check for unknown Keys
-                guard let token = InfoToken(rawValue: property.key) else {
+                guard let token = InfoTokens(rawValue: property.key) else {
                     // log it and ignore the Key
                     _log("Radio, unknown info token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue
@@ -1066,7 +1066,7 @@ public final class Radio: ObservableObject {
             for property in properties {
 
                 // check for unknown Keys
-                guard let token = VersionToken(rawValue: property.key) else {
+                guard let token = VersionTokens(rawValue: property.key) else {
                     // log it and ignore the Key
                     _log("Radio, unknown version token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue
@@ -1191,19 +1191,19 @@ public final class Radio: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
 
-    private func apfCmd( _ token: EqApfToken, _ value: Any) {
+    private func apfCmd( _ token: EqApfTokens, _ value: Any) {
         _api.send("eq apf " + token.rawValue + "=\(value)")
     }
     private func mixerCmd( _ token: String, _ value: Any) {
         _api.send("mixer " + token + " \(value)")
     }
-    private func radioSetCmd( _ token: RadioToken, _ value: Any) {
+    private func radioSetCmd( _ token: RadioTokens, _ value: Any) {
         _api.send("radio set " + token.rawValue + "=\(value)")
     }
     private func radioSetCmd( _ token: String, _ value: Any) {
         _api.send("radio set " + token + "=\(value)")
     }
-    private func radioCmd( _ token: RadioToken, _ value: Any) {
+    private func radioCmd( _ token: RadioTokens, _ value: Any) {
         _api.send("radio " + token.rawValue + " \(value)")
     }
     private func radioCmd( _ token: String, _ value: Any) {
@@ -1230,7 +1230,7 @@ extension Radio: StaticModel {
             _suppress = true
 
             // separate by category
-            if let category = RadioTokenCategory(rawValue: properties[0].key) {
+            if let category = RadioTokenTypes(rawValue: properties[0].key) {
                 // drop the first property
                 let adjustedProperties = Array(properties[1...])
 
@@ -1245,7 +1245,7 @@ extension Radio: StaticModel {
                 // process each key/value pair, <key=value>
                 for property in properties {
                     // Check for Unknown Keys
-                    guard let token = RadioToken(rawValue: property.key)  else {
+                    guard let token = RadioTokens(rawValue: property.key)  else {
                         // log it and ignore the Key
                         _log("Radio, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                         continue

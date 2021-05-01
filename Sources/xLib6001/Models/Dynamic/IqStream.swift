@@ -51,7 +51,7 @@ public final class IqStream: ObservableObject, Identifiable {
     // ------------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum IqTokens: String {
         case available
         case capacity
         case clientHandle         = "client_handle"
@@ -101,7 +101,7 @@ public final class IqStream: ObservableObject, Identifiable {
     ///   - token:      the parse token
     ///   - value:      the new value
     ///
-    private func iqCmd(_ token: Token, _ value: Any) {
+    private func iqCmd(_ token: IqTokens, _ value: Any) {
         _api.send("dax iq " + "\(_daxIqChannel) " + token.rawValue + "=\(value)")
     }
 }
@@ -156,7 +156,7 @@ extension IqStream: DynamicModelWithStream {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = IqTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("IqStream, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

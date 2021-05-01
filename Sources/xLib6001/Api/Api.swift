@@ -83,31 +83,7 @@ public final class Api: ObservableObject {
         public var reducedDaxBw: Bool = false
         public var logState: NSLogging = .normal
         public var needsCwStream: Bool = false
-        public var pendingDisconnect: PendingDisconnect = .none
-        
-//        public init(packet: DiscoveryPacket,
-//                    station: String = "",
-//                    program: String = "",
-//                    clientId: String? = nil,
-//                    isGui: Bool = true,
-//                    wanHandle: String = "",
-//                    reducedDaxBw: Bool = false,
-//                    logState: NSLogging = .normal,
-//                    needsCwStream: Bool = false,
-//                    pendingDisconnect: PendingDisconnect = .none) {
-//
-//            self.packet = packet
-//            self.station = station
-//            self.program = program
-//            self.clientId = clientId
-//            self.isGui = isGui
-//            self.wanHandle = wanHandle
-//            self.reducedDaxBw = reducedDaxBw
-//            self.logState = logState
-//            self.needsCwStream = needsCwStream
-//            self.needsCwStream = needsCwStream
-//            self.pendingDisconnect = pendingDisconnect
-//        }
+        public var pendingDisconnect: PendingDisconnect = .none        
     }
     public enum State {
         case tcpConnected (host: String, port: UInt16)

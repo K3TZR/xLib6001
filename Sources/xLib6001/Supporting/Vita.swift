@@ -56,14 +56,14 @@ public class Vita {
   // filled with defaults, values are changed when created
   //      Types are shown for clarity
   
-  var packetType                            : PacketType = .extDataWithStream     // Packet type
-  var classCode                             : PacketClassCode = .panadapter       // Packet class code
+  var packetType                            : PacketTypes = .extDataWithStream    // Packet type
+  var classCode                             : PacketClassCodes = .panadapter      // Packet class code
   var streamId                              : UInt32 = 0                          // Stream ID
   
   var classIdPresent                        : Bool = true                         // Class ID present
   var trailerPresent                        : Bool = false                        // Trailer present
-  var tsiType                               : TsiType = .utc                      // Integer timestamp type
-  var tsfType                               : TsfType = .sampleCount              // Fractional timestamp type
+  var tsiType                               : TsiTypes = .utc                     // Integer timestamp type
+  var tsfType                               : TsfTypes = .sampleCount             // Fractional timestamp type
   var sequence                              : Int = 0                             // Mod 16 packet sequence number
   var packetSize                            : Int = 0                             // Size of packet (32 bit chunks)
   var integerTimestamp                      : UInt32 = 0                          // Integer portion
@@ -145,7 +145,7 @@ public class Vita {
     let vitaHeader = (data as NSData).bytes.bindMemory(to: VitaHeader.self, capacity: 1)
     
     // capture Packet Type
-    guard let pt = PacketType(rawValue: (vitaHeader.pointee.packetDesc & kPacketTypeMask) >> 4) else {return nil}
+    guard let pt = PacketTypes(rawValue: (vitaHeader.pointee.packetDesc & kPacketTypeMask) >> 4) else {return nil}
     vita.packetType = pt
     
     // capture ClassId & TrailerId present
@@ -153,11 +153,11 @@ public class Vita {
     vita.trailerPresent = (vitaHeader.pointee.packetDesc & kTrailerPresentMask) == kTrailerPresentMask
     
     // capture Time Stamp Integer
-    guard let intStamp = TsiType(rawValue: (vitaHeader.pointee.timeStampDesc & kTsiTypeMask) >> 6) else {return nil}
+    guard let intStamp = TsiTypes(rawValue: (vitaHeader.pointee.timeStampDesc & kTsiTypeMask) >> 6) else {return nil}
     vita.tsiType = intStamp
     
     // capture Time Stamp Fractional
-    guard let fracStamp = TsfType(rawValue: (vitaHeader.pointee.timeStampDesc & kTsfTypeMask) >> 4) else {return nil}
+    guard let fracStamp = TsfTypes(rawValue: (vitaHeader.pointee.timeStampDesc & kTsfTypeMask) >> 4) else {return nil}
     vita.tsfType = fracStamp
     
     // capture PacketCount & PacketSize
@@ -182,7 +182,7 @@ public class Vita {
       let value = CFSwapInt32BigToHost(vitaOptionals.advanced(by: headerCount + 1).pointee)
       vita.informationClassCode = (value & kInformationClassCodeMask) >> 16
       
-      guard let cc = PacketClassCode(rawValue: UInt16(value & kPacketClassCodeMask)) else {return nil}
+      guard let cc = PacketClassCodes(rawValue: UInt16(value & kPacketClassCodeMask)) else {return nil}
       vita.classCode = cc
       
       // Increment past these items
@@ -289,80 +289,141 @@ public class Vita {
   /// Parse a Vita class containing a Discovery broadcast
   /// - Returns:        a RadioParameters struct (or nil)
   ///
-  public class func parseDiscovery(_ vita: Vita) -> DiscoveryPacket? {
+  public class func parseVitaDiscovery(_ vita: Vita) -> DiscoveryPacket? {
     // is this a Discovery packet?
     if vita.classIdPresent && vita.classCode == .discovery {
-      // YES, create a minimal packet with now as "lastSeen"
-      var packet = DiscoveryPacket()
-
       // Payload is a series of strings of the form <key=value> separated by ' ' (space)
       var payloadData = NSString(bytes: vita.payloadData, length: vita.payloadSize, encoding: String.Encoding.ascii.rawValue)! as String
 
       // eliminate any Nulls at the end of the payload
       payloadData = payloadData.trimmingCharacters(in: CharacterSet(charactersIn: "\0"))
       
-      // parse into a KeyValuesArray
-      let properties = payloadData.keyValuesArray()
-      
-      // process each key/value pair, <key=value>
-      for property in properties {
-        // check for unknown Keys
-        guard let token = DiscoveryToken(rawValue: property.key) else {
-          // log it and ignore the Key
-          LogProxy.sharedInstance.libMessage("Unknown Discovery token - \(property.key) = \(property.value)", .warning, #function, #file, #line)
-          continue
-        }
-        switch token {
-          
-        case .availableClients:           packet.availableClients = property.value.iValue      // newApi only
-        case .availablePanadapters:       packet.availablePanadapters = property.value.iValue  // newApi only
-        case .availableSlices:            packet.availableSlices = property.value.iValue       // newApi only
-        case .callsign:                   packet.callsign = property.value
-        case .discoveryVersion:           packet.discoveryVersion = property.value             // local only
-        case .firmwareVersion:            packet.firmwareVersion = property.value
-        case .fpcMac:                     packet.fpcMac = property.value                       // local only
-        case .guiClientHandles:           packet.guiClientHandles = property.value             // newApi only
-        case .guiClientHosts:             packet.guiClientHosts = property.value               // newApi only
-        case .guiClientIps:               packet.guiClientIps = property.value                 // newApi only
-        case .guiClientPrograms:          packet.guiClientPrograms = property.value            // newApi only
-        case .guiClientStations:          packet.guiClientStations = property.value            // newApi only
-        case .inUseHostLOCAL:             packet.inUseHost = property.value                    // deprecated in newApi
-        case .inUseIpLOCAL:               packet.inUseIp = property.value                      // deprecated in newApi
-        case .licensedClients:            packet.licensedClients = property.value.iValue       // newApi only
-        case .maxLicensedVersion:         packet.maxLicensedVersion = property.value
-        case .maxPanadapters:             packet.maxPanadapters = property.value.iValue        // newApi only
-        case .maxSlices:                  packet.maxSlices = property.value.iValue             // newApi only
-        case .model:                      packet.model = property.value
-        case .nicknameLOCAL:              packet.nickname = property.value
-        case .port:                       packet.port = property.value.iValue
-        case .publicIpLOCAL:              packet.publicIp = property.value
-        case .publicTlsPort:              packet.publicTlsPort = property.value.iValue         // smartlink only
-        case .publicUdpPort:              packet.publicUdpPort = property.value.iValue         // smartlink only
-        case .publicUpnpTlsPort:          packet.publicUpnpTlsPort = property.value.iValue     // smartlink only
-        case .publicUpnpUdpPort:          packet.publicUpnpUdpPort = property.value.iValue     // smartlink only
-        case .radioLicenseId:             packet.radioLicenseId = property.value
-        case .requiresAdditionalLicense:  packet.requiresAdditionalLicense = property.value.bValue
-        case .serialNumber:               packet.serialNumber = property.value
-        case .status:                     packet.status = property.value
-        case .upnpSupported:              packet.upnpSupported = property.value.bValue         // smartlink only
-        case .wanConnected:               packet.wanConnected = property.value.bValue          // local only
-          
-        // present to suppress log warning, should never occur
-        case .inUseHostSMARTLINK, .inUseIpSMARTLINK, .nicknameSMARTLINK, .publicIpSMARTLINK:    break
-
-        // satisfy the switch statement, not a real token
-        case .lastSeen:                   break
-        }
-      }
-      // is it a valid Discovery packet?
-      if packet.publicIp != "" && packet.port != 0 && packet.model != "" && packet.serialNumber != "" {
-        // YES, return the packet
-        return packet
-      }
+      return  ParseDiscovery( payloadData.keyValuesArray() )
     }
-    // Not a Discovery packet
     return nil
   }
+//      // process each key/value pair, <key=value>
+//      for property in properties {
+//        // check for unknown Keys
+//        guard let token = Discovery.Tokens(rawValue: property.key) else {
+//          // log it and ignore the Key
+//          LogProxy.sharedInstance.libMessage("Unknown Discovery token - \(property.key) = \(property.value)", .warning, #function, #file, #line)
+//          continue
+//        }
+//        switch token {
+//
+//        case .availableClients:           packet.availableClients = property.value.iValue      // newApi only
+//        case .availablePanadapters:       packet.availablePanadapters = property.value.iValue  // newApi only
+//        case .availableSlices:            packet.availableSlices = property.value.iValue       // newApi only
+//        case .callsign:                   packet.callsign = property.value
+//        case .discoveryVersion:           packet.discoveryVersion = property.value             // local only
+//        case .firmwareVersion:            packet.firmwareVersion = property.value
+//        case .fpcMac:                     packet.fpcMac = property.value                       // local only
+//        case .guiClientHandles:           packet.guiClientHandles = property.value             // newApi only
+//        case .guiClientHosts:             packet.guiClientHosts = property.value               // newApi only
+//        case .guiClientIps:               packet.guiClientIps = property.value                 // newApi only
+//        case .guiClientPrograms:          packet.guiClientPrograms = property.value            // newApi only
+//        case .guiClientStations:          packet.guiClientStations = property.value            // newApi only
+//        case .inUseHostLOCAL:             packet.inUseHost = property.value                    // deprecated in newApi
+//        case .inUseIpLOCAL:               packet.inUseIp = property.value                      // deprecated in newApi
+//        case .licensedClients:            packet.licensedClients = property.value.iValue       // newApi only
+//        case .maxLicensedVersion:         packet.maxLicensedVersion = property.value
+//        case .maxPanadapters:             packet.maxPanadapters = property.value.iValue        // newApi only
+//        case .maxSlices:                  packet.maxSlices = property.value.iValue             // newApi only
+//        case .model:                      packet.model = property.value
+//        case .nicknameLOCAL:              packet.nickname = property.value
+//        case .port:                       packet.port = property.value.iValue
+//        case .publicIpLOCAL:              packet.publicIp = property.value
+//        case .publicTlsPort:              packet.publicTlsPort = property.value.iValue         // smartlink only
+//        case .publicUdpPort:              packet.publicUdpPort = property.value.iValue         // smartlink only
+//        case .publicUpnpTlsPort:          packet.publicUpnpTlsPort = property.value.iValue     // smartlink only
+//        case .publicUpnpUdpPort:          packet.publicUpnpUdpPort = property.value.iValue     // smartlink only
+//        case .radioLicenseId:             packet.radioLicenseId = property.value
+//        case .requiresAdditionalLicense:  packet.requiresAdditionalLicense = property.value.bValue
+//        case .serialNumber:               packet.serialNumber = property.value
+//        case .status:                     packet.status = property.value
+//        case .upnpSupported:              packet.upnpSupported = property.value.bValue         // smartlink only
+//        case .wanConnected:               packet.wanConnected = property.value.bValue          // local only
+//
+//        // present to suppress log warning, should never occur
+//        case .inUseHostSMARTLINK, .inUseIpSMARTLINK, .nicknameSMARTLINK, .publicIpSMARTLINK:    break
+//
+//        // satisfy the switch statement, not a real token
+//        case .lastSeen:                   break
+//        }
+//      }
+//      // is it a valid Discovery packet?
+//      if packet.publicIp != "" && packet.port != 0 && packet.model != "" && packet.serialNumber != "" {
+//        // YES, return the packet
+//        return packet
+//      }
+//    }
+//    // Not a Discovery packet
+//    return nil
+//  }
+
+    public class func ParseDiscovery(_ properties: KeyValuesArray) -> DiscoveryPacket? {
+        // YES, create a minimal packet with now as "lastSeen"
+        var packet = DiscoveryPacket()
+
+        // process each key/value pair, <key=value>
+        for property in properties {
+            // check for unknown Keys
+            guard let token = Discovery.Tokens(rawValue: property.key) else {
+                // log it and ignore the Key
+                LogProxy.sharedInstance.libMessage("Unknown Discovery token - \(property.key) = \(property.value)", .warning, #function, #file, #line)
+                continue
+            }
+            switch token {
+
+            case .availableClients:           packet.availableClients = property.value.iValue      // newApi only
+            case .availablePanadapters:       packet.availablePanadapters = property.value.iValue  // newApi only
+            case .availableSlices:            packet.availableSlices = property.value.iValue       // newApi only
+            case .callsign:                   packet.callsign = property.value
+            case .discoveryVersion:           packet.discoveryVersion = property.value             // local only
+            case .firmwareVersion:            packet.firmwareVersion = property.value
+            case .fpcMac:                     packet.fpcMac = property.value                       // local only
+            case .guiClientHandles:           packet.guiClientHandles = property.value             // newApi only
+            case .guiClientHosts:             packet.guiClientHosts = property.value               // newApi only
+            case .guiClientIps:               packet.guiClientIps = property.value                 // newApi only
+            case .guiClientPrograms:          packet.guiClientPrograms = property.value            // newApi only
+            case .guiClientStations:          packet.guiClientStations = property.value            // newApi only
+            case .inUseHostLOCAL:             packet.inUseHost = property.value                    // deprecated in newApi
+            case .inUseIpLOCAL:               packet.inUseIp = property.value                      // deprecated in newApi
+            case .licensedClients:            packet.licensedClients = property.value.iValue       // newApi only
+            case .maxLicensedVersion:         packet.maxLicensedVersion = property.value
+            case .maxPanadapters:             packet.maxPanadapters = property.value.iValue        // newApi only
+            case .maxSlices:                  packet.maxSlices = property.value.iValue             // newApi only
+            case .model:                      packet.model = property.value
+            case .nicknameLOCAL:              packet.nickname = property.value
+            case .port:                       packet.port = property.value.iValue
+            case .publicIpLOCAL:              packet.publicIp = property.value
+            case .publicTlsPort:              packet.publicTlsPort = property.value.iValue         // smartlink only
+            case .publicUdpPort:              packet.publicUdpPort = property.value.iValue         // smartlink only
+            case .publicUpnpTlsPort:          packet.publicUpnpTlsPort = property.value.iValue     // smartlink only
+            case .publicUpnpUdpPort:          packet.publicUpnpUdpPort = property.value.iValue     // smartlink only
+            case .radioLicenseId:             packet.radioLicenseId = property.value
+            case .requiresAdditionalLicense:  packet.requiresAdditionalLicense = property.value.bValue
+            case .serialNumber:               packet.serialNumber = property.value
+            case .status:                     packet.status = property.value
+            case .upnpSupported:              packet.upnpSupported = property.value.bValue         // smartlink only
+            case .wanConnected:               packet.wanConnected = property.value.bValue          // local only
+
+            // present to suppress log warning, should never occur
+            case .inUseHostSMARTLINK, .inUseIpSMARTLINK, .nicknameSMARTLINK, .publicIpSMARTLINK:    break
+
+            // satisfy the switch statement, not a real token
+            case .lastSeen:                   break
+            }
+        }
+        // is it a valid Discovery packet?
+        if packet.publicIp != "" && packet.port != 0 && packet.model != "" && packet.serialNumber != "" {
+            // YES, return the packet
+            return packet
+        }
+        // Not a Discovery packet
+        return nil
+    }
 
   // ----------------------------------------------------------------------------
   // MARK: - Initialization
@@ -378,15 +439,15 @@ public class Vita {
   ///   - streamId:       a StreamId
   ///   - reducedBW:      is for reduced bandwidth
   ///
-  convenience init(type: VitaType, streamId: UInt32, reducedBW: Bool = false) {
+  convenience init(type: VitaTypes, streamId: UInt32, reducedBW: Bool = false) {
     
     switch type {
     case .netCW:    self.init(packetType: .extDataWithStream, classCode: .daxAudio, streamId: streamId, tsi: .other, tsf: .sampleCount)
     case .opusTxV2: self.init(packetType: .extDataWithStream, classCode: .daxAudio, streamId: streamId, tsi: .other, tsf: .sampleCount)
     case .opusTx:   self.init(packetType: .extDataWithStream, classCode: .opus, streamId: streamId, tsi: .other, tsf: .sampleCount)
     case .txAudio:
-      var classCode = PacketClassCode.daxAudio
-      if reducedBW { classCode = PacketClassCode.daxReducedBw }
+      var classCode = PacketClassCodes.daxAudio
+      if reducedBW { classCode = PacketClassCodes.daxReducedBw }
       self.init(packetType: .ifDataWithStream, classCode: classCode, streamId: streamId, tsi: .other, tsf: .sampleCount)
     }
   }
@@ -400,7 +461,7 @@ public class Vita {
   ///   - tsf:            the type of Fractional Time Stamp
   /// - Returns:          a partially populated Vita struct
   ///
-  init(packetType: PacketType, classCode: PacketClassCode, streamId: UInt32, tsi: TsiType, tsf: TsfType) {
+  init(packetType: PacketTypes, classCode: PacketClassCodes, streamId: UInt32, tsi: TsiTypes, tsf: TsfTypes) {
     assert(packetType == .extDataWithStream || packetType == .ifDataWithStream)
     
     self.packetType = packetType
@@ -463,57 +524,15 @@ public class Vita {
 
 extension Vita {
   /// Types
-  enum VitaType {
+  enum VitaTypes {
     case netCW
     case opusTxV2
     case opusTx
     case txAudio
   }
 
-  /// Discovery properties
-  public enum DiscoveryToken : String {
-    case lastSeen                   = "last_seen"                   // not a real token
-
-    case availableClients           = "available_clients"           // newApi, local only
-    case availablePanadapters       = "available_panadapters"       // newApi, local only
-    case availableSlices            = "available_slices"            // newApi, local only
-    case callsign
-    case discoveryVersion           = "discovery_protocol_version"  // local only
-    case firmwareVersion            = "version"
-    case fpcMac                     = "fpc_mac"                     // local only
-    case guiClientHandles           = "gui_client_handles"          // newApi
-    case guiClientHosts             = "gui_client_hosts"            // newApi
-    case guiClientIps               = "gui_client_ips"              // newApi
-    case guiClientPrograms          = "gui_client_programs"         // newApi
-    case guiClientStations          = "gui_client_stations"         // newApi
-    case inUseHostLOCAL             = "inuse_host"                  // deprecated -- local only
-    case inUseHostSMARTLINK         = "inusehost"                   // deprecated -- smartlink only
-    case inUseIpLOCAL               = "inuse_ip"                    // deprecated -- local only
-    case inUseIpSMARTLINK           = "inuseip"                     // deprecated -- smartlink only
-    case licensedClients            = "licensed_clients"            // newApi, local only
-    case maxLicensedVersion         = "max_licensed_version"
-    case maxPanadapters             = "max_panadapters"             // newApi, local only
-    case maxSlices                  = "max_slices"                  // newApi, local only
-    case model
-    case nicknameLOCAL              = "nickname"                    // local only
-    case nicknameSMARTLINK          = "radio_name"                  // smartlink only
-    case port                                                       // local only
-    case publicIpLOCAL              = "ip"                          // local only
-    case publicIpSMARTLINK          = "public_ip"                   // smartlink only
-    case publicTlsPort              = "public_tls_port"             // smartlink only
-    case publicUdpPort              = "public_udp_port"             // smartlink only
-    case publicUpnpTlsPort          = "public_upnp_tls_port"        // smartlink only
-    case publicUpnpUdpPort          = "public_upnp_udp_port"        // smartlink only
-    case requiresAdditionalLicense  = "requires_additional_license"
-    case radioLicenseId             = "radio_license_id"
-    case serialNumber               = "serial"
-    case status
-    case upnpSupported              = "upnp_supported"              // smartlink only
-    case wanConnected               = "wan_connected"               // Local only
-  }
-
   /// Packet Types
-  public enum PacketType : UInt8 {          // Packet Types
+  public enum PacketTypes : UInt8 {          // Packet Types
     case ifData             = 0x00
     case ifDataWithStream   = 0x01
     case extData            = 0x02
@@ -534,7 +553,7 @@ extension Vita {
   }
 
   /// Tsi Types
-  public enum TsiType : UInt8 {             // Timestamp - Integer
+  public enum TsiTypes : UInt8 {             // Timestamp - Integer
     case none   = 0x00
     case utc    = 0x01
     case gps    = 0x02
@@ -551,7 +570,7 @@ extension Vita {
   }
 
   /// Tsf Types
-  public enum TsfType : UInt8 {             // Timestamp - Fractional
+  public enum TsfTypes : UInt8 {             // Timestamp - Fractional
     case none         = 0x00
     case sampleCount  = 0x01
     case realtime     = 0x02
@@ -568,7 +587,7 @@ extension Vita {
   }
 
   /// Class codes
-  public enum PacketClassCode : UInt16 {    // Packet Class Codes
+  public enum PacketClassCodes : UInt16 {    // Packet Class Codes
     case meter          = 0x8002
     case panadapter     = 0x8003
     case waterfall      = 0x8004

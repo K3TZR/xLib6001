@@ -52,7 +52,7 @@ public final class Waterfall: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum Token : String {
+    enum WaterfallTokens : String {
         case clientHandle         = "client_handle"   // New Api only
 
         // on Waterfall
@@ -109,7 +109,7 @@ public final class Waterfall: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
 
-    private func waterfallCmd(_ token: Token, _ value: Any) {
+    private func waterfallCmd(_ token: WaterfallTokens, _ value: Any) {
         _api.send("display panafall set " + "\(id.hex) " + token.rawValue + "=\(value)")
     }
 }
@@ -184,7 +184,7 @@ extension Waterfall: DynamicModelWithStream {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = WaterfallTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("Waterfall, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

@@ -59,7 +59,7 @@ public final class Equalizer: ObservableObject, Identifiable {
     // ------------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum EqualizerTokens: String {
         case level63Hz                          = "63hz"
         case level125Hz                         = "125hz"
         case level250Hz                         = "250hz"
@@ -87,7 +87,7 @@ public final class Equalizer: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command  methods
     
-    private func eqCmd(_ token: Token, _ value: Any) {
+    private func eqCmd(_ token: EqualizerTokens, _ value: Any) {
         _api.send("eq " + id + " " + token.rawValue + "=\(value)")
     }
     private func eqCmd( _ token: String, _ value: Any) {
@@ -144,7 +144,7 @@ extension Equalizer: DynamicModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = EqualizerTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("Equalizer, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

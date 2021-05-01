@@ -56,7 +56,7 @@ public final class Interlock: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum InterlockTokens: String {
         case accTxEnabled       = "acc_tx_enabled"
         case accTxDelay         = "acc_tx_delay"
         case accTxReqEnabled    = "acc_txreq_enable"
@@ -78,7 +78,7 @@ public final class Interlock: ObservableObject {
         case tx3Enabled         = "tx3_enabled"
         case tx3Delay           = "tx3_delay"
     }
-    enum State: String {
+    enum States: String {
         case receive            = "RECEIVE"
         case ready              = "READY"
         case notReady           = "NOT_READY"
@@ -89,7 +89,7 @@ public final class Interlock: ObservableObject {
         case stuckInput         = "STUCK_INPUT"
         case unKeyRequested     = "UNKEY_REQUESTED"
     }
-    enum PttSource: String {
+    enum PttSources: String {
         case software           = "SW"
         case mic                = "MIC"
         case acc                = "ACC"
@@ -117,7 +117,7 @@ public final class Interlock: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Command methods
     
-    private func interlockCmd(_ token: Token, _ value: Any) {
+    private func interlockCmd(_ token: InterlockTokens, _ value: Any) {
         _api.send("interlock " + token.rawValue + "=\(value)")
     }
 }
@@ -142,7 +142,7 @@ extension Interlock: StaticModel {
             // NO, process each key/value pair, <key=value>
             for property in properties {
                 // Check for Unknown Keys
-                guard let token = Token(rawValue: property.key)  else {
+                guard let token = InterlockTokens(rawValue: property.key)  else {
                     // log it and ignore the Key
                     _log("Interlock, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue

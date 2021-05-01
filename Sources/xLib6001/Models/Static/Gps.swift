@@ -38,7 +38,7 @@ public final class Gps: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum Token: String {
+    enum GpsTokens: String {
         case altitude
         case frequencyError = "freq_error"
         case grid
@@ -90,7 +90,7 @@ extension Gps: StaticModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // Check for Unknown Keys
-            guard let token = Token(rawValue: property.key)  else {
+            guard let token = GpsTokens(rawValue: property.key)  else {
                 // log it and ignore the Key
                 _log("Gps, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

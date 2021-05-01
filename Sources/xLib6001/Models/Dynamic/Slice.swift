@@ -202,7 +202,7 @@ public final class Slice: ObservableObject , Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum Token : String {
+    enum SliceTokens : String {
         case active
         case agcMode                    = "agc_mode"
         case agcOffLevel                = "agc_off_level"
@@ -325,7 +325,7 @@ public final class Slice: ObservableObject , Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
 
-    private func sliceCmd(_ token: Token, _ value: Any) {
+    private func sliceCmd(_ token: SliceTokens, _ value: Any) {
         _api.send("slice set " + "\(id) " + token.rawValue + "=\(value)")
     }
     private func audioGainCmd(_ value: Double) {
@@ -502,7 +502,7 @@ extension Slice: DynamicModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = SliceTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("Slice, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

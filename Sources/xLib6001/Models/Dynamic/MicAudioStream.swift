@@ -54,7 +54,7 @@ public final class MicAudioStream: ObservableObject, Identifiable {
     // ------------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum MicTokens: String {
         case clientHandle = "client_handle"
         case inUse        = "in_use"
         case ip
@@ -143,7 +143,7 @@ extension MicAudioStream: DynamicModelWithStream {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = MicTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("MicAudioStream, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

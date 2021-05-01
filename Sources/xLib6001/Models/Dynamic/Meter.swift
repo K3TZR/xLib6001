@@ -96,7 +96,7 @@ public final class Meter: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum Token : String {
+    enum MeterTokens : String {
         case desc
         case fps
         case high       = "hi"
@@ -198,7 +198,7 @@ extension Meter: DynamicModel {
             let key = numberAndKey[1]
 
             // check for unknown Keys
-            guard let token = Token(rawValue: key) else {
+            guard let token = MeterTokens(rawValue: key) else {
                 // log it and ignore the Key
                 _log("Meter, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

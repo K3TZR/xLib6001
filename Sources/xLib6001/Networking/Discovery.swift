@@ -30,10 +30,48 @@ public final class Discovery: NSObject {
         get { Api.objectQ.sync { _radios } }
         set { Api.objectQ.sync(flags: .barrier) {_radios = newValue }}}
 
-//    public var discoveryPackets: [DiscoveryPacket] {
-//        get { Api.objectQ.sync { _discoveryPackets } }
-//        set { Api.objectQ.sync(flags: .barrier) {_discoveryPackets = newValue }}}
-    
+    public enum Tokens : String {
+      case lastSeen                   = "last_seen"                   // not a real token
+
+      case availableClients           = "available_clients"           // newApi, local only
+      case availablePanadapters       = "available_panadapters"       // newApi, local only
+      case availableSlices            = "available_slices"            // newApi, local only
+      case callsign
+      case discoveryVersion           = "discovery_protocol_version"  // local only
+      case firmwareVersion            = "version"
+      case fpcMac                     = "fpc_mac"                     // local only
+      case guiClientHandles           = "gui_client_handles"          // newApi
+      case guiClientHosts             = "gui_client_hosts"            // newApi
+      case guiClientIps               = "gui_client_ips"              // newApi
+      case guiClientPrograms          = "gui_client_programs"         // newApi
+      case guiClientStations          = "gui_client_stations"         // newApi
+      case inUseHostLOCAL             = "inuse_host"                  // deprecated -- local only
+      case inUseHostSMARTLINK         = "inusehost"                   // deprecated -- smartlink only
+      case inUseIpLOCAL               = "inuse_ip"                    // deprecated -- local only
+      case inUseIpSMARTLINK           = "inuseip"                     // deprecated -- smartlink only
+      case licensedClients            = "licensed_clients"            // newApi, local only
+      case maxLicensedVersion         = "max_licensed_version"
+      case maxPanadapters             = "max_panadapters"             // newApi, local only
+      case maxSlices                  = "max_slices"                  // newApi, local only
+      case model
+      case nicknameLOCAL              = "nickname"                    // local only
+      case nicknameSMARTLINK          = "radio_name"                  // smartlink only
+      case port                                                       // local only
+      case publicIpLOCAL              = "ip"                          // local only
+      case publicIpSMARTLINK          = "public_ip"                   // smartlink only
+      case publicTlsPort              = "public_tls_port"             // smartlink only
+      case publicUdpPort              = "public_udp_port"             // smartlink only
+      case publicUpnpTlsPort          = "public_upnp_tls_port"        // smartlink only
+      case publicUpnpUdpPort          = "public_upnp_udp_port"        // smartlink only
+      case radioLicenseId             = "radio_license_id"
+      case requiresAdditionalLicense  = "requires_additional_license"
+      case serialNumber               = "serial"
+      case status
+      case upnpSupported              = "upnp_supported"              // smartlink only
+      case wanConnected               = "wan_connected"               // Local only
+    }
+
+
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
     
@@ -85,7 +123,6 @@ public final class Discovery: NSObject {
             }
             
             do {
-                
                 // attempt to start receiving
                 try sock.beginReceiving()
                 
@@ -312,7 +349,7 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
         guard let vita = Vita.decodeFrom(data: data) else { return }
         
         // parse vita to obtain a DiscoveryPacket
-        if let packet = Vita.parseDiscovery(vita) {
+        if let packet = Vita.parseVitaDiscovery(vita) {
             processPacket(packet)
         }
     }
@@ -356,14 +393,26 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
 ///     Equatable by serial number & isWan
 ///
 public struct DiscoveryPacket : Equatable, Hashable {
-    
+
+    public init() {
+        lastSeen = Date() // now
+
+        publicTlsPort = -1
+        publicUdpPort = -1
+        isPortForwardOn = false
+        publicTlsPort = -1
+        publicUdpPort = -1
+        publicUpnpTlsPort = -1
+        publicUpnpUdpPort = -1
+    }
+
     public func hash(into hasher: inout Hasher) {
         hasher.combine(publicIp)
     }
     
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
-    
+
     public var lastSeen : Date {
         get { Api.objectQ.sync { _lastSeen } }
         set { Api.objectQ.sync(flags: .barrier) {_lastSeen = newValue }}}
@@ -389,9 +438,6 @@ public struct DiscoveryPacket : Equatable, Hashable {
     public var fpcMac: String {
         get { Api.objectQ.sync { _fpcMac } }
         set { Api.objectQ.sync(flags: .barrier) {_fpcMac = newValue }}}
-//    public var guiClients: [GuiClient] {
-//        get { Api.objectQ.sync { _guiClients } }
-//        set { Api.objectQ.sync(flags: .barrier) {_guiClients = newValue }}}
     public var guiClientHandles: String {
         get { Api.objectQ.sync { _guiClientHandles } }
         set { Api.objectQ.sync(flags: .barrier) {_guiClientHandles = newValue }}}
@@ -478,10 +524,10 @@ public struct DiscoveryPacket : Equatable, Hashable {
     public var localInterfaceIP: String {
         get { Api.objectQ.sync { _localInterfaceIP } }
         set { Api.objectQ.sync(flags: .barrier) {_localInterfaceIP = newValue }}}
-    public var lowBandwidthConnect: Bool {
-        get { Api.objectQ.sync { _lowBandwidthConnect } }
-        set { Api.objectQ.sync(flags: .barrier) {_lowBandwidthConnect = newValue }}}
-    public var negotiatedHolePunchPort: Int {
+//    public var lowBandwidthConnect: Bool {
+//        get { Api.objectQ.sync { _lowBandwidthConnect } }
+//        set { Api.objectQ.sync(flags: .barrier) {_lowBandwidthConnect = newValue }}}
+    public var negotiatedHolePunchPort: Int {               // FIXME: never set anywhere
         get { Api.objectQ.sync { _negotiatedHolePunchPort } }
         set { Api.objectQ.sync(flags: .barrier) {_negotiatedHolePunchPort = newValue }}}
     public var requiresHolePunch: Bool {
@@ -526,12 +572,11 @@ public struct DiscoveryPacket : Equatable, Hashable {
     private var _discoveryVersion           = ""
     private var _firmwareVersion            = ""
     private var _fpcMac                     = ""
-    private var _guiClients                 = [GuiClient]()
     private var _guiClientHandles           = ""
-    private var _guiClientPrograms          = ""
-    private var _guiClientStations          = ""
     private var _guiClientHosts             = ""
     private var _guiClientIps               = ""
+    private var _guiClientPrograms          = ""
+    private var _guiClientStations          = ""
     private var _inUseHost                  = ""
     private var _inUseIp                    = ""
     private var _licensedClients            = 0

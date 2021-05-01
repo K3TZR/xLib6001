@@ -43,7 +43,7 @@ public final class DaxRxAudioStream: ObservableObject, Identifiable {
     // ------------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum DaxRxTokens: String {
         case clientHandle   = "client_handle"
         case daxChannel     = "dax_channel"
         case ip
@@ -80,8 +80,8 @@ public final class DaxRxAudioStream: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
     
-    private func audioStreamCmd(_ token: String, _ value: Any) {
-        _api.send("audio stream \(id.hex) slice \(slice!.id) " + token + " \(value)")
+    private func audioStreamCmd(_ tokenString: String, _ value: Any) {
+        _api.send("audio stream \(id.hex) slice \(slice!.id) " + tokenString + " \(value)")
     }
 }
 
@@ -139,7 +139,7 @@ extension DaxRxAudioStream: DynamicModelWithStream {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = DaxRxTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("DaxRxAudioStream, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

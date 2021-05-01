@@ -35,7 +35,7 @@ public final class Cwx: ObservableObject {
     var macros: [String]
     let kMaxNumberOfMacros = 12
 
-    enum Token : String {
+    enum CwxTokens: String {
         case breakInDelay   = "break_in_delay"
         case qskEnabled     = "qsk_enabled"
         case erase
@@ -224,11 +224,11 @@ public final class Cwx: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
 
-    private func cwxCmd(_ token: Token, _ value: Any) {
+    private func cwxCmd(_ token: CwxTokens, _ value: Any) {
         _api.send("cwx " + token.rawValue + " \(value)")
     }
-    private func cwxCmd(_ token: String, _ value: Any) {
-        _api.send("cwx " + token + " \(value)")
+    private func cwxCmd(_ tokenString: String, _ value: Any) {
+        _api.send("cwx " + tokenString + " \(value)")
     }
 }
 
@@ -260,7 +260,7 @@ extension Cwx: StaticModel {
                     _suppress = true
 
                     // Check for Unknown Keys
-                    guard let token = Token(rawValue: property.key) else {
+                    guard let token = CwxTokens(rawValue: property.key) else {
                         // log it and ignore the Key
                         _log("Cwx, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                         _suppress = false

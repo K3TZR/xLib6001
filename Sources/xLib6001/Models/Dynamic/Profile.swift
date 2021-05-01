@@ -38,12 +38,12 @@ public final class Profile: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
 
-    public enum Group : String {
+    public enum ProfileGroups : String {
         case global
         case mic
         case tx
     }
-    public enum Token: String {
+    public enum ProfileTokens: String {
         case list       = "list"
         case selection  = "current"
     }
@@ -107,7 +107,7 @@ extension Profile: DynamicModel {
             let id = String(components[0])
 
             // check for unknown Keys
-            guard let _ = Group(rawValue: id) else {
+            guard let _ = ProfileGroups(rawValue: id) else {
                 // log it and ignore the Key
                 LogProxy.sharedInstance.libMessage("Unknown Profile group: \(id)", .warning, #function, #file, #line)
                 return
@@ -143,7 +143,7 @@ extension Profile: DynamicModel {
         _suppress = true
 
         // check for unknown Keys
-        guard let token = Token(rawValue: properties[0].key) else {
+        guard let token = ProfileTokens(rawValue: properties[0].key) else {
             // log it and ignore the Key
             _log("Profile, unknown token: \(properties[0].key) = \(properties[0].value)", .warning, #function, #file, #line)
             return

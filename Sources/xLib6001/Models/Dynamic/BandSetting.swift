@@ -48,7 +48,7 @@ public final class BandSetting: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum BandSettingTokens: String {
         case accTxEnabled       = "acc_tx_enabled"
         case accTxReqEnabled    = "acc_txreq_enable"
         case bandName           = "band_name"
@@ -91,10 +91,10 @@ public final class BandSetting: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
 
-    private func transmitSet(_ token: Token, _ value: Any) {
+    private func transmitSet(_ token: BandSettingTokens, _ value: Any) {
         _api.send("transmit bandset \(id) \(token.rawValue)=\(value)")
     }
-    private func interlockSet(_ token: Token, _ value: Any) {
+    private func interlockSet(_ token: BandSettingTokens, _ value: Any) {
         _api.send("interlock bandset \(id)  \(token.rawValue)=\(value)")
     }
  }
@@ -154,7 +154,7 @@ extension BandSetting: DynamicModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = BandSettingTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("BandSetting, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

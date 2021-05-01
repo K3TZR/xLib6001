@@ -109,7 +109,7 @@ public final class Transmit: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum TransmitTokens: String {
         case amCarrierLevel           = "am_carrier_level"              // "am_carrier"
         case companderEnabled         = "compander"
         case companderLevel           = "compander_level"
@@ -181,29 +181,29 @@ public final class Transmit: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Command methods
 
-    private func cwCmd(_ token: Token, _ value: Any) {
+    private func cwCmd(_ token: TransmitTokens, _ value: Any) {
         Api.sharedInstance.send("cw " + token.rawValue + " \(value)")
     }
-    private func micCmd(_ token: Token, _ value: Any) {
+    private func micCmd(_ token: TransmitTokens, _ value: Any) {
         Api.sharedInstance.send("mic " + token.rawValue + " \(value)")
     }
-    private func transmitCmd(_ token: Token, _ value: Any) {
+    private func transmitCmd(_ token: TransmitTokens, _ value: Any) {
         Api.sharedInstance.send("transmit set " + token.rawValue + "=\(value)")
     }
-    private func tuneCmd(_ token: Token, _ value: Any) {
+    private func tuneCmd(_ token: TransmitTokens, _ value: Any) {
         Api.sharedInstance.send("transmit " + token.rawValue + " \(value)")
     }
 
     // alternate forms for commands that do not use the Token raw value in outgoing messages
 
-    private func cwCmd(_ token: String, _ value: Any) {
-        Api.sharedInstance.send("cw " + token + " \(value)")
+    private func cwCmd(_ tokenString: String, _ value: Any) {
+        Api.sharedInstance.send("cw " + tokenString + " \(value)")
     }
-    private func micCmd(_ token: String, _ value: Any) {
-        Api.sharedInstance.send("mic " + token + " \(value)")
+    private func micCmd(_ tokenString: String, _ value: Any) {
+        Api.sharedInstance.send("mic " + tokenString + " \(value)")
     }
-    private func transmitCmd(_ token: String, _ value: Any) {
-        Api.sharedInstance.send("transmit set " + token + "=\(value)")
+    private func transmitCmd(_ tokenString: String, _ value: Any) {
+        Api.sharedInstance.send("transmit set " + tokenString + "=\(value)")
     }
 }
 
@@ -232,7 +232,7 @@ extension Transmit: StaticModel {
             // process each key/value pair, <key=value>
             for property in properties {
                 // Check for Unknown Keys
-                guard let token = Token(rawValue: property.key)  else {
+                guard let token = TransmitTokens(rawValue: property.key)  else {
                     // log it and ignore the Key
                     _log("Transmit, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue

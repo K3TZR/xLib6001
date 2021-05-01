@@ -56,7 +56,7 @@ public final class Atu: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum Token: String {
+    enum AtuTokens: String {
         case status
         case enabled            = "atu_enabled"
         case memoriesEnabled    = "memories_enabled"
@@ -89,10 +89,10 @@ public final class Atu: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
 
-    private func atuCmd(_ token: Token, _ value: Any) {
+    private func atuCmd(_ token: AtuTokens, _ value: Any) {
         _api.send("atu " + token.rawValue + "=\(value)")
     }
-    private func atuSetCmd(_ token: Token, _ value: Any) {
+    private func atuSetCmd(_ token: AtuTokens, _ value: Any) {
         _api.send("atu set " + token.rawValue + "=\(value)")
     }
 }
@@ -115,7 +115,7 @@ extension Atu: StaticModel {
             // process each key/value pair, <key=value>
             for property in properties {
                 // Check for Unknown Keys
-                guard let token = Token(rawValue: property.key)  else {
+                guard let token = AtuTokens(rawValue: property.key)  else {
                     // log it and ignore the Key
                     _log("Atu, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue

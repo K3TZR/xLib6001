@@ -76,7 +76,7 @@ public final class UsbCable: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token : String {
+    enum UsbCableTokens : String {
         case autoReport       = "auto_report"
         case band
         case cableType        = "type"
@@ -133,7 +133,7 @@ public final class UsbCable: ObservableObject, Identifiable {
     ///   - token:      the parse token
     ///   - value:      the new value
     ///
-    private func usbCableCmd(_ token: Token, _ value: Any) {
+    private func usbCableCmd(_ token: UsbCableTokens, _ value: Any) {
         _api.send("usb_cable set " + "\(id) " + token.rawValue + "=\(value)")
     }
 }
@@ -215,7 +215,7 @@ extension UsbCable: DynamicModel {
             // process each key/value pair, <key=value>
             for property in properties {
                 // check for unknown Keys
-                guard let token = Token(rawValue: property.key) else {
+                guard let token = UsbCableTokens(rawValue: property.key) else {
                     // log it and ignore the Key
                     _log("USBCable, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue

@@ -45,7 +45,7 @@ public final class TxAudioStream: ObservableObject {
     // ------------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum TxAudioTokens: String {
         case clientHandle   = "client_handle"
         case daxTx          = "dax_tx"
         case inUse          = "in_use"
@@ -219,7 +219,7 @@ extension TxAudioStream: DynamicModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = TxAudioTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("TxAudioStream, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

@@ -40,7 +40,7 @@ public final class Amplifier: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token : String {
+    enum AmplifierTokens : String {
         case ant
         case handle
         case ip
@@ -49,7 +49,7 @@ public final class Amplifier: ObservableObject, Identifiable {
         case serialNumber         = "serial_num"
         case state
     }
-    enum State : String {
+    enum AmplifierStates : String {
         case fault                = "FAULT"
         case idle                 = "IDLE"
         case powerUp              = "POWERUP"
@@ -131,7 +131,7 @@ public final class Amplifier: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
     
-    private func amplifierCmd(_ token: Token, _ value: Any) {
+    private func amplifierCmd(_ token: AmplifierTokens, _ value: Any) {
         _api.send("amplifier set " + "\(id.hex) " + token.rawValue + "=\(value)")
     }
 }
@@ -190,7 +190,7 @@ extension Amplifier: DynamicModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = AmplifierTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("Amplifier, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

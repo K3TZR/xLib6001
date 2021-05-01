@@ -51,7 +51,7 @@ public final class Xvtr: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum Token : String {
+    enum XvtrTokens : String {
         case name
         case ifFrequency    = "if_freq"
         case isValid        = "is_valid"
@@ -93,7 +93,7 @@ public final class Xvtr: ObservableObject, Identifiable {
     ///   - token:      the parse token
     ///   - value:      the new value
     ///
-    private func xvtrCmd(_ token: Token, _ value: Any) {
+    private func xvtrCmd(_ token: XvtrTokens, _ value: Any) {
         _api.send("xvtr set " + "\(id) " + token.rawValue + "=\(value)")
     }
 }
@@ -154,7 +154,7 @@ extension Xvtr: DynamicModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = XvtrTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("Xvtr, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

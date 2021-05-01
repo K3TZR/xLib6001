@@ -53,7 +53,7 @@ public final class RemoteRxAudioStream: ObservableObject, Identifiable {
     // ------------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum Token : String {
+    enum RemoteRxTokens : String {
         case clientHandle         = "client_handle"
         case compression
         case ip
@@ -139,7 +139,7 @@ extension RemoteRxAudioStream: DynamicModelWithStream {
         // process each key/value pair
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = RemoteRxTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("RemoteRxAudioStream, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

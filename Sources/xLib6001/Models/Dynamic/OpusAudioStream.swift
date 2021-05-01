@@ -64,7 +64,7 @@ public final class OpusAudioStream: ObservableObject, Identifiable {
     // ------------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token: String {
+    enum OpusTokens: String {
         case clientHandle         = "client_handle"
         case ipAddress            = "ip"
         case port
@@ -150,7 +150,7 @@ public final class OpusAudioStream: ObservableObject, Identifiable {
     ///   - token:      the parse token
     ///   - value:      the new value
     ///
-    private func opusCmd(_ token: Token, _ value: Any) {
+    private func opusCmd(_ token: OpusTokens, _ value: Any) {
         Api.sharedInstance.send(OpusAudioStream.kCmd + token.rawValue + " \(value)")
     }
 }
@@ -213,7 +213,7 @@ extension OpusAudioStream: DynamicModelWithStream {
         // process each key/value pair
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = OpusTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("OpusAudioStream, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

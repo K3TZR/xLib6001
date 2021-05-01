@@ -108,7 +108,7 @@ public final class Panadapter: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    enum Token : String {
+    enum PanadapterTokens : String {
         // on Panadapter
         case antList                    = "ant_list"
         case average
@@ -213,7 +213,7 @@ public final class Panadapter: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
 
-    private func panadapterSet(_ token: Token, _ value: Any) {
+    private func panadapterSet(_ token: PanadapterTokens, _ value: Any) {
         _api.send("display panafall set " + "\(id.hex) " + token.rawValue + "=\(value)")
     }
     // alternate forms for commands that do not use the Token raw value in outgoing messages
@@ -283,7 +283,7 @@ extension Panadapter: DynamicModelWithStream {
         // process each key/value pair, <key=value>
         for property in properties {
             // check for unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = PanadapterTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("Panadapter, unknown token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

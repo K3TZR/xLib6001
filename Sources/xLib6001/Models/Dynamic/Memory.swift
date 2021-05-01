@@ -79,7 +79,7 @@ public final class Memory: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    enum Token : String {
+    enum MemoryTokens : String {
         case digitalLowerOffset         = "digl_offset"
         case digitalUpperOffset         = "digu_offset"
         case frequency                  = "freq"
@@ -197,7 +197,7 @@ public final class Memory: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Private Command methods
     
-    private func memCmd(_ token: Token, _ value: Any) {
+    private func memCmd(_ token: MemoryTokens, _ value: Any) {
         _api.send("memory set " + "\(id) " + token.rawValue + "=\(value)")
     }
 }
@@ -253,7 +253,7 @@ extension Memory: DynamicModel {
         // process each key/value pair, <key=value>
         for property in properties {
             // Check for Unknown Keys
-            guard let token = Token(rawValue: property.key) else {
+            guard let token = MemoryTokens(rawValue: property.key) else {
                 // log it and ignore the Key
                 _log("Memory, unknown  token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                 continue

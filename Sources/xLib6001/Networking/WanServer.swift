@@ -398,117 +398,121 @@ public final class WanServer: NSObject, ObservableObject {
     /// Parse a list of Radios
     /// - Parameter msg:        the list
     private func parseRadioList(_ msg: String.SubSequence) {
-        // several radios are possible
-        // separate list into its components
+        var publicTlsPortToUse = -1
+        var publicUdpPortToUse = -1
+
+        // several radios are possible, separate list into its components
         let radioMessages = msg.components(separatedBy: "|")
         
         var currentPacketList = [DiscoveryPacket]()
         
         for message in radioMessages where message != "" {
-            // create a minimal DiscoveryPacket with now as "lastSeen"
-            var packet = DiscoveryPacket()
+
+//            var publicTlsPortToUse = -1
+//            var publicUdpPortToUse = -1
+//            var isPortForwardOn = false
+//            var publicTlsPort = -1
+//            var publicUdpPort = -1
+//            var publicUpnpTlsPort = -1
+//            var publicUpnpUdpPort = -1
             
-            var publicTlsPortToUse = -1
-            var publicUdpPortToUse = -1
-            var isPortForwardOn = false
-            var publicTlsPort = -1
-            var publicUdpPort = -1
-            var publicUpnpTlsPort = -1
-            var publicUpnpUdpPort = -1
-            
-            let properties = message.keyValuesArray()
-            
-            // process each key/value pair, <key=value>
-            for property in properties {
-                // Check for Unknown Keys
-                guard let token = Vita.DiscoveryToken(rawValue: property.key)  else {
-                    // log it and ignore the Key
-                    _log("WanServer, unknown radio list token: \(property.key)", .warning, #function, #file, #line)
-                    continue
+//            let properties = message.keyValuesArray()
+
+            if var packet = Vita.ParseDiscovery( message.keyValuesArray() ) {
+                // now continue to fill the radio parameters
+                // favor using the manually defined forwarded ports if they are defined
+                if (packet.publicTlsPort != -1 && packet.publicUdpPort != -1) {
+                    publicTlsPortToUse = packet.publicTlsPort
+                    publicUdpPortToUse = packet.publicUdpPort
+                    packet.isPortForwardOn = true;
+                } else if (packet.upnpSupported) {
+                    publicTlsPortToUse = packet.publicUpnpTlsPort
+                    publicUdpPortToUse = packet.publicUpnpUdpPort
+                    packet.isPortForwardOn = false
                 }
-                
-                // Known tokens, in alphabetical order
-                switch token {
-                
-                case .callsign:                   packet.callsign = property.value
-                case .guiClientHandles:           packet.guiClientHandles = property.value
-                case .guiClientHosts:             packet.guiClientHosts = property.value
-                case .guiClientIps:               packet.guiClientIps = property.value
-                case .guiClientPrograms:          packet.guiClientPrograms = property.value
-                case .guiClientStations:          packet.guiClientStations = property.value
-                case .inUseIpSMARTLINK:           packet.inUseIp = property.value
-                case .inUseHostSMARTLINK:         packet.inUseHost = property.value
-                case .lastSeen:
-                    let dateFormatter = DateFormatter()
-                    // date format is like: 2/6/2018_5:20:16_AM
-                    dateFormatter.dateFormat = "M/d/yyy_H:mm:ss_a"
-                    
-                    guard let date = dateFormatter.date(from: property.value.lowercased()) else {
-                        _log("WanServer, LastSeen date mismatched format: \(property.value)", .error, #function, #file, #line)
-                        break
-                    }
-                    // use date constant here
-                    packet.lastSeen = date
-                case .maxLicensedVersion:         packet.maxLicensedVersion = property.value
-                case .model:                      packet.model = property.value
-                case .nicknameSMARTLINK:          packet.nickname = property.value
-                case .publicIpSMARTLINK:          packet.publicIp = property.value
-                case .publicTlsPort:              publicTlsPort = property.value.iValue
-                case .publicUdpPort:              publicUdpPort = property.value.iValue
-                case .publicUpnpTlsPort:          publicUpnpTlsPort = property.value.iValue
-                case .publicUpnpUdpPort:          publicUpnpUdpPort = property.value.iValue
-                case .requiresAdditionalLicense:  packet.requiresAdditionalLicense = property.value.bValue
-                case .radioLicenseId:             packet.radioLicenseId = property.value
-                case .serialNumber:               packet.serialNumber = property.value
-                case .status:                     packet.status = property.value
-                case .upnpSupported:              packet.upnpSupported = property.value.bValue
-                case .firmwareVersion:            packet.firmwareVersion = property.value
-                    
-                // present to suppress log warning, should never occur
-                case .discoveryVersion, .fpcMac, .publicIpLOCAL:          break
-                case .inUseHostLOCAL,.inUseIpLOCAL, .nicknameLOCAL:       break
-                case .licensedClients, .availableClients:                 break
-                case .maxPanadapters, .availablePanadapters:              break
-                case .maxSlices, .availableSlices, .port, .wanConnected:  break
+
+                if ( !packet.upnpSupported && !packet.isPortForwardOn ) {
+                    /* This will require extra negotiation that chooses
+                     * a port for both sides to try
+                     */
+                    //TODO: We also need to check the NAT for preserve_ports coming from radio here
+                    // if the NAT DOES NOT preserve ports then we can't do hole punch
+                    packet.requiresHolePunch = true
                 }
+                packet.publicTlsPort = publicTlsPortToUse
+                packet.publicUdpPort = publicUdpPortToUse
+                packet.isPortForwardOn = packet.isPortForwardOn
+                if let localAddr = _tlsSocket.localHost {
+                    packet.localInterfaceIP = localAddr
+                }
+                currentPacketList.append(packet)
             }
-            // now continue to fill the radio parameters
-            // favor using the manually defined forwarded ports if they are defined
-            if (publicTlsPort != -1 && publicUdpPort != -1) {
-                publicTlsPortToUse = publicTlsPort
-                publicUdpPortToUse = publicUdpPort
-                isPortForwardOn = true;
-            } else if (packet.upnpSupported) {
-                publicTlsPortToUse = publicUpnpTlsPort
-                publicUdpPortToUse = publicUpnpUdpPort
-                isPortForwardOn = false
+            _log("WanServer, Radio List received", .debug, #function, #file, #line)
+
+            for (i, _) in currentPacketList.enumerated() {
+                currentPacketList[i].isWan = true
+                // pass it to Discovery
+                Discovery.sharedInstance.processPacket(currentPacketList[i])
             }
-            
-            if ( !packet.upnpSupported && !isPortForwardOn ) {
-                /* This will require extra negotiation that chooses
-                 * a port for both sides to try
-                 */
-                //TODO: We also need to check the NAT for preserve_ports coming from radio here
-                // if the NAT DOES NOT preserve ports then we can't do hole punch
-                packet.requiresHolePunch = true
-            }
-            packet.publicTlsPort = publicTlsPortToUse
-            packet.publicUdpPort = publicUdpPortToUse
-            packet.isPortForwardOn = isPortForwardOn
-            if let localAddr = _tlsSocket.localHost {
-                packet.localInterfaceIP = localAddr
-            }
-            currentPacketList.append(packet)
-        }
-        _log("WanServer, Radio List received", .debug, #function, #file, #line)
-        
-        for (i, _) in currentPacketList.enumerated() {
-            currentPacketList[i].isWan = true
-            // pass it to Discovery
-            Discovery.sharedInstance.processPacket(currentPacketList[i])
         }
     }
-    
+
+//            }
+//            // process each key/value pair, <key=value>
+//            for property in properties {
+//                // Check for Unknown Keys
+//                guard let token = Discovery.Tokens(rawValue: property.key)  else {
+//                    // log it and ignore the Key
+//                    _log("WanServer, unknown radio list token: \(property.key)", .warning, #function, #file, #line)
+//                    continue
+//                }
+//
+//                // Known tokens, in alphabetical order
+//                switch token {
+//
+//                case .callsign:                   packet.callsign = property.value
+//                case .guiClientHandles:           packet.guiClientHandles = property.value
+//                case .guiClientHosts:             packet.guiClientHosts = property.value
+//                case .guiClientIps:               packet.guiClientIps = property.value
+//                case .guiClientPrograms:          packet.guiClientPrograms = property.value
+//                case .guiClientStations:          packet.guiClientStations = property.value
+//                case .inUseIpSMARTLINK:           packet.inUseIp = property.value
+//                case .inUseHostSMARTLINK:         packet.inUseHost = property.value
+//                case .lastSeen:
+//                    let dateFormatter = DateFormatter()
+//                    // date format is like: 2/6/2018_5:20:16_AM
+//                    dateFormatter.dateFormat = "M/d/yyy_H:mm:ss_a"
+//
+//                    guard let date = dateFormatter.date(from: property.value.lowercased()) else {
+//                        _log("WanServer, LastSeen date mismatched format: \(property.value)", .error, #function, #file, #line)
+//                        break
+//                    }
+//                    // use date constant here
+//                    packet.lastSeen = date
+//                case .maxLicensedVersion:         packet.maxLicensedVersion = property.value
+//                case .model:                      packet.model = property.value
+//                case .nicknameSMARTLINK:          packet.nickname = property.value
+//                case .publicIpSMARTLINK:          packet.publicIp = property.value
+//                case .publicTlsPort:              publicTlsPort = property.value.iValue
+//                case .publicUdpPort:              publicUdpPort = property.value.iValue
+//                case .publicUpnpTlsPort:          publicUpnpTlsPort = property.value.iValue
+//                case .publicUpnpUdpPort:          publicUpnpUdpPort = property.value.iValue
+//                case .requiresAdditionalLicense:  packet.requiresAdditionalLicense = property.value.bValue
+//                case .radioLicenseId:             packet.radioLicenseId = property.value
+//                case .serialNumber:               packet.serialNumber = property.value
+//                case .status:                     packet.status = property.value
+//                case .upnpSupported:              packet.upnpSupported = property.value.bValue
+//                case .firmwareVersion:            packet.firmwareVersion = property.value
+//
+//                // present to suppress log warning, should never occur
+//                case .discoveryVersion, .fpcMac, .publicIpLOCAL:          break
+//                case .inUseHostLOCAL,.inUseIpLOCAL, .nicknameLOCAL:       break
+//                case .licensedClients, .availableClients:                 break
+//                case .maxPanadapters, .availablePanadapters:              break
+//                case .maxSlices, .availableSlices, .port, .wanConnected:  break
+//                }
+//            }
+
     /// Parse a Test Connection result
     /// - Parameter properties:         a KeyValuesArray
     private func parseTestConnectionResults(_ properties: KeyValuesArray) {

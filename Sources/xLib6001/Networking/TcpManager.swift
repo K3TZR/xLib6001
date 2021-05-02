@@ -15,30 +15,10 @@ public typealias ReplyTuple = (replyTo: ReplyHandler?, command: String)
 
 /// Delegate protocol for the TcpManager class
 protocol TcpManagerDelegate: AnyObject {
-    // if any of theses are not needed, implement a stub in the delegate that does nothing
 
-    /// A Tcp message was received the Radio
-    /// - Parameter text:             text of the message
-    ///
     func didReceive(_ text: String)
-
-    /// A Tcp message was sent to the Radio
-    /// - Parameter text:             text of the message
-    ///
     func didSend(_ text: String)
-    
-    /// Process a Tcp connection
-    /// - Parameters:
-    ///   - host:                     host Ip address
-    ///   - port:                     host Port number
-    ///   - error:                    error message (may be blank)
-    ///
     func didConnect(host: String, port: UInt16)
-
-    /// Process a Tcp disconnection
-    /// - Parameters:
-    ///   - reason:                   explanation
-    ///
     func didDisconnect(reason: String)
 }
 

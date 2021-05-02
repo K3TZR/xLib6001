@@ -28,7 +28,7 @@ public protocol ApiDelegate {
 ///      creation / destruction of the Radio class (the object analog of the
 ///      Radio hardware)
 ///
-public final class Api: ObservableObject {
+public final class Api {
     
     public typealias CommandTuple = (command: String, diagnostic: Bool, replyHandler: ReplyHandler?)
     
@@ -51,19 +51,13 @@ public final class Api: ObservableObject {
     static        let kDisconnected     = "disconnected"
 
     // ----------------------------------------------------------------------------
-    // MARK: - Published properties
-
-    @Published public var delegate: ApiDelegate?
-    @Published public var localIP = ""
-    @Published public var localUDPPort: UInt16 = 0
-
-    // ----------------------------------------------------------------------------
     // MARK: - Public properties
-    
+
     public var activeRadio: Radio? {
         get { Api.objectQ.sync { _activeRadio } }
         set { Api.objectQ.sync(flags: .barrier) { _activeRadio = newValue }}}
-    private var _activeRadio: Radio?
+
+    public var delegate: ApiDelegate?
 
     public var messageLogging = false
     public var state: State = .clientDisconnected
@@ -130,12 +124,13 @@ public final class Api: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
     
-    internal var tcp: TcpManager!  // commands
-    internal var udp : UdpManager!  // streams
+    var tcp: TcpManager!  // commands
+    var udp: UdpManager!  // streams
     
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
     
+    private var _activeRadio: Radio?
     private var _clientId: String?
     private var _clientStation = ""
     private var _lowBandwidthConnect = false
@@ -239,9 +234,16 @@ public final class Api: ObservableObject {
                         logState: NSLogging = .normal,
                         needsCwStream: Bool = false,
                         pendingDisconnect: PendingDisconnect = .none) -> Bool {
-        
+
+        guard Discovery.sharedInstance.radios.count > index else {
+            _log("Api, Invalid radios index: count = \(Discovery.sharedInstance.radios.count), index = \(index)", .error, #function, #file, #line)
+            fatalError("Invalid radios index")
+        }
         // must be in the Disconnected state to connect
-        guard state == .clientDisconnected else { return false }
+        guard state == .clientDisconnected else {
+            _log("Api, Invalid state on connect: state != .clientDisconnected", .warning, #function, #file, #line)
+            return false
+        }
         
         // save the connection parameters
         _params = ApiConnectionParams(index: index,
@@ -301,45 +303,19 @@ public final class Api: ObservableObject {
     /// - Parameter newState: the new state
     ///
     public func updateState(to newState: State) {
-        
         state = newState
 
         switch state {
 
-        case .clientDisconnected:
-            _log("Api client disconnected", .debug, #function, #file, #line)
-
-        case .clientConnected (let radio) where radio.packet.isWan:
-            // when connecting to a WAN radio, the public IP address of the connected
-            // client must be obtained from the radio.  This value is used to determine
-            // if audio streams from the radio are meant for this client.
-            // (IsAudioStreamStatusForThisClient() checks for LocalIP)
-            send("client ip", replyTo: clientIpReplyHandler)
-
-        case .clientConnected (let radio):
-            // use the ip of the local interface
-            localIP = tcp.interfaceIpAddress
-
-            // complete the connection
-            connectionCompletion(to: radio)
-
-        case .tcpDisconnected (let reason):
-            // inform observers
-            NC.post(.tcpDidDisconnect, object: reason)
-            _log("Api Tcp Disconnected: reason = \(reason)", .debug, #function, #file, #line)
-
-            // close the UDP port (it won't be reused with a new connection)
-            udp.unbind(reason: "TCP Disconnected")
+        // Connection -----------------------------------------------------------------------------
 
         case .tcpConnected (let host, let port):
+            _log("Api TCP connected to: \(host), port \(port)", .debug, #function, #file, #line)
             NC.post(.tcpDidConnect, object: nil)
-            let wanStatus = activeRadio!.packet.isWan ? "SMARTLINK" : "LOCAL"
-            let guiStatus = isGui ? "(GUI) " : "(NON-GUI)"
-            _log("Api TCP connected to: \(host), port \(port) \(guiStatus)(\(wanStatus))", .debug, #function, #file, #line)
 
             if activeRadio!.packet.isWan {
-                send("wan validate handle=" + activeRadio!.packet.wanHandle, replyTo: wanValidateReplyHandler)
                 _log("Api Validate Wan handle: \(activeRadio!.packet.wanHandle)", .debug, #function, #file, #line)
+                send("wan validate handle=" + activeRadio!.packet.wanHandle, replyTo: wanValidateReplyHandler)
 
             } else {
                 // bind a UDP port for the Streams
@@ -361,18 +337,43 @@ public final class Api: ObservableObject {
             // if a Wan connection, register
             if activeRadio!.packet.isWan { udp.register(clientHandle: connectionHandle) }
 
-            localUDPPort = receivePort
-
             // a UDP port has been bound, inform observers
             NC.post(.udpDidBind, object: nil)
+
+        case .clientConnected (let radio) where radio.packet.isWan:
+            _log("Api client connected (WAN)", .debug, #function, #file, #line)
+            // when connecting to a WAN radio, the public IP address of the connected
+            // client must be obtained from the radio.
+            // connectionCompletion is invoked when the reply is received
+            send("client ip", replyTo: clientIpReplyHandler)
+
+        case .clientConnected (let radio):
+            _log("Api client connected (LOCAL)", .debug, #function, #file, #line)
+
+            // complete the connection
+            connectionCompletion(to: radio)
+
+        // Disconnection --------------------------------------------------------------------------
+
+        case .tcpDisconnected (let reason):
+            _log("Api Tcp Disconnected: reason = \(reason)", .debug, #function, #file, #line)
+            NC.post(.tcpDidDisconnect, object: reason)
+
+            // close the UDP port (it won't be reused with a new connection)
+            udp.unbind(reason: "TCP Disconnected")
 
         case .udpUnbound (let reason):
             _log("Api UDP unbound: reason = \(reason)", .debug, #function, #file, #line)
             updateState(to: .clientDisconnected)
 
+        case .clientDisconnected:
+            _log("Api client disconnected", .debug, #function, #file, #line)
+
+        // Not Implemented ------------------------------------------------------------------------
+
         case .update:
-            _log("Api Update not supported", .warning, #function, #file, #line)
-            break   // Api Update not supported
+            _log("Api Update not implemented", .warning, #function, #file, #line)
+            break
         }
     }
 
@@ -397,6 +398,8 @@ public final class Api: ObservableObject {
         // disconnect TCP
         tcp.disconnect()
 
+        activeRadio?.removeAllObjects()
+
         // remove the Radio
         activeRadio = nil
 
@@ -412,16 +415,12 @@ public final class Api: ObservableObject {
             send("client disconnect \(handle.hex)")
         }
     }
-    
-    // ----------------------------------------------------------------------------
-    // MARK: - Internal methods
-    
+
     /// Send a command to the Radio (hardware)
     /// - Parameters:
     ///   - command:        a Command String
     ///   - flag:           use "D"iagnostic form
     ///   - callback:       a callback function (if any)
-    ///
     public func send(_ command: String, diagnostic flag: Bool = false, replyTo callback: ReplyHandler? = nil) {
         
         // tell the TcpManager to send the command
@@ -436,13 +435,13 @@ public final class Api: ObservableObject {
     
     /// executed after an IP Address has been obtained
     private func connectionCompletion(to radio: Radio) {
-        _log("Api client connected: \(radio.packet.nickname)\(_params.pendingDisconnect != .none ? " (Pending Disconnection)" : "")", .debug, #function, #file, #line)
+        _log("Api connectionCompletion for: \(radio.packet.nickname)\(_params.pendingDisconnect != .none ? " (Pending Disconnection)" : "")", .debug, #function, #file, #line)
 
         // send the initial commands if a normal connection
         if _params.pendingDisconnect == .none { sendCommands(to: radio) }
 
         // set the UDP port for a Local connection
-        if !radio.packet.isWan { send("client udpport " + "\(localUDPPort)") }
+        if !radio.packet.isWan { send("client udpport " + "\(udp.sendPort)") }
 
         // start pinging (if enabled)
         if _params.pendingDisconnect == .none { if pingerEnabled { _pinger = Pinger(tcpManager: tcp) }}
@@ -540,26 +539,33 @@ public final class Api: ObservableObject {
             // was an error code returned?
             if responseValue == Api.kNoError {
                 // NO, the reply value is the IP address
-                localIP = reply.isValidIP4() ? reply : "0.0.0.0"
+//                localIP = reply.isValidIP4() ? reply : "0.0.0.0"
 
             } else {
                 // YES, use the ip of the local interface
-                localIP = tcp.interfaceIpAddress
+//                localIP = tcp.interfaceIpAddress
             }
             connectionCompletion(to: radio)
         }
     }
 }
 
+// ----------------------------------------------------------------------------
+
 extension Api: TcpManagerDelegate {
+
+    func didSend(_ msg: String) {
+        // pass it to any delegates
+        delegate?.sentMessage( String(msg.dropLast()) )
+        testerDelegate?.sentMessage( String(msg.dropLast()) )
+        if messageLogging { _log("---->>>> " + msg, .debug, #function, #file, #line) }
+    }
 
     func didReceive(_ msg: String) {
         // is it a non-empty message?
         if msg.count > 1 {
-            
             // YES, pass it to any delegates (async on the parseQ)
             _parseQ.async { [ unowned self ] in
-                
                 self.delegate?.receivedMessage( String(msg.dropLast()) )
                 
                 // pass it to xAPITester (if present)
@@ -570,13 +576,6 @@ extension Api: TcpManagerDelegate {
         }
     }
 
-    func didSend(_ msg: String) {
-        // pass it to any delegates
-        delegate?.sentMessage( String(msg.dropLast()) )
-        testerDelegate?.sentMessage( String(msg.dropLast()) )
-        if messageLogging { _log("---->>>> " + msg, .debug, #function, #file, #line) }
-    }
-    
     func didConnect(host: String, port: UInt16) {
         updateState(to: .tcpConnected (host: host, port: port))
         tcp.readNext()

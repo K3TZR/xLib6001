@@ -27,9 +27,12 @@ final class UdpManager: NSObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    var udpSuccessfulRegistration: Bool {
-        get { Api.objectQ.sync { _udpSuccessfulRegistration } }
-        set { Api.objectQ.sync(flags: .barrier) {_udpSuccessfulRegistration = newValue }}}
+    var receivePort: UInt16 = 0
+    var sendPort: UInt16 = kUdpSendPort
+    var sendIP = ""
+    var registration: Bool {
+        get { Api.objectQ.sync { _registration } }
+        set { Api.objectQ.sync(flags: .barrier) {_registration = newValue }}}
 
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
@@ -41,9 +44,6 @@ final class UdpManager: NSObject {
     private var _udpRegisterQ: DispatchQueue!
     private var _udpSocket: GCDAsyncUdpSocket!
     private var _udpBound = false
-    private var _udpRcvPort: UInt16 = 0
-    private var _udpSendIP = ""
-    private var _udpSendPort: UInt16 = kUdpSendPort
 
     private let kPingCmd = "client ping handle"
     private let kPingDelay: UInt32 = 50
@@ -66,7 +66,7 @@ final class UdpManager: NSObject {
         _udpReceiveQ = udpReceiveQ
         _udpRegisterQ = udpRegisterQ
         _delegate = delegate
-        _udpRcvPort = udpRcvPort
+        receivePort = udpRcvPort
 
         super.init()
 
@@ -83,7 +83,7 @@ final class UdpManager: NSObject {
     /// - Parameters:
     ///   - data:               a Data
     func sendData(_ data: Data) {
-        _udpSocket.send(data, toHost: _udpSendIP, port: _udpSendPort, withTimeout: -1, tag: 0)
+        _udpSocket.send(data, toHost: sendIP, port: sendPort, withTimeout: -1, tag: 0)
     }
 
     /// Bind to the UDP Port
@@ -100,15 +100,15 @@ final class UdpManager: NSObject {
 
         case (true, true):        // isWan w/hole punch
             portToUse = UInt16(packet.negotiatedHolePunchPort)
-            _udpSendPort = UInt16(packet.negotiatedHolePunchPort)
+            sendPort = UInt16(packet.negotiatedHolePunchPort)
             tries = 1  // isWan w/hole punch
 
         case (true, false):       // isWan
             portToUse = UInt16(packet.publicUdpPort)
-            _udpSendPort = UInt16(packet.publicUdpPort)
+            sendPort = UInt16(packet.publicUdpPort)
 
         default:                  // local
-            portToUse = _udpRcvPort
+            portToUse = receivePort
         }
 
         // Find a UDP port to receive on, scan from the default Port Number up looking for an available port
@@ -131,12 +131,12 @@ final class UdpManager: NSObject {
         // was a port bound?
         if success {
             // YES, save the actual port & ip in use
-            _udpRcvPort = portToUse
-            _udpSendIP = packet.publicIp
+            receivePort = portToUse
+            sendIP = packet.publicIp
             _udpBound = true
 
             // change the state
-            _delegate?.didBind(receivePort: _udpRcvPort, sendPort: _udpSendPort)
+            _delegate?.didBind(receivePort: receivePort, sendPort: sendPort)
 
             // a UDP bind has been established
             beginReceiving()
@@ -168,7 +168,7 @@ final class UdpManager: NSObject {
         // tell the receive socket to close
         _udpSocket.close()
 
-        udpSuccessfulRegistration = false
+        registration = false
 
         // notify the delegate
         _delegate?.didUnbind(reason: reason)
@@ -185,7 +185,7 @@ final class UdpManager: NSObject {
         }
         // register & keep open the router (on a background queue)
         _udpRegisterQ.async { [unowned self] in
-            while self._udpSocket != nil && !self.udpSuccessfulRegistration && self._udpBound {
+            while self._udpSocket != nil && !self.registration && self._udpBound {
 
                 self._log("UdpManager, register wan: handle=" + clientHandle!.hex, .debug, #function, #file, #line)
 
@@ -196,7 +196,7 @@ final class UdpManager: NSObject {
                 // pause
                 usleep(self.kRegistrationDelay)
             }
-            self._log("UdpManager, register wan exited: Registration=\(self.udpSuccessfulRegistration)", .debug, #function, #file, #line)
+            self._log("UdpManager, register wan exited: Registration=\(self.registration)", .debug, #function, #file, #line)
 
             //      // as long as connected after Registration
             //      while self._udpSocket != nil && self._udpBound {
@@ -219,7 +219,7 @@ final class UdpManager: NSObject {
     // ----------------------------------------------------------------------------
     // *** Backing properties (Do NOT use) ***
 
-    private var _udpSuccessfulRegistration = false
+    private var _registration = false
 }
 
 extension UdpManager: GCDAsyncUdpSocketDelegate {
@@ -235,7 +235,7 @@ extension UdpManager: GCDAsyncUdpSocketDelegate {
                 guard vita.oui == Vita.kFlexOui  else { return }
 
                 // we got a VITA packet which means registration was successful
-                self?.udpSuccessfulRegistration = true
+                self?.registration = true
 
                 switch vita.packetType {
 

@@ -417,18 +417,6 @@ public final class Radio: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Public methods
     
-    /// Send Vita UDP data
-    /// - Parameter data:   the contents as Data
-    ///
-//    public func sendVita(_ data: Data?) {
-//
-//        // if data present
-//        if let dataToSend = data {
-//
-//            // send it (no validity checks are performed)
-//            _api.udp.sendData(dataToSend)
-//        }
-//    }
     /// Remove all Radio objects
     ///
     public func removeAllObjects() {

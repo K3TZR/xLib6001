@@ -604,42 +604,28 @@ public final class Radio: ObservableObject {
     }
     
     private func parseV3Disconnection(properties: KeyValuesArray, handle: Handle) {
-        var duplicateClientId = false
-        var forced = false
-        var wanValidationFailed = false
-        
-        // parse remaining properties
-        for property in properties.dropFirst(2) {
-            
-            // check for unknown Keys
-            guard let token = ClientTokenV3Disconnection(rawValue: property.key) else {
-                // log it and ignore this Key
-                _log("Radio, unknown client disconnection token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
-                continue
-            }
-            // Known keys, in alphabetical order
-            switch token {
-            
-            case .duplicateClientId:
-                duplicateClientId = property.value.bValue
-                
-            case .forced:
-                forced = property.value.bValue
-                
-            case .wanValidationFailed:
-                wanValidationFailed = property.value.bValue
-            }
-        }
+        var reason = ""
+
         // is it me?
-        if handle == _api.connectionHandle && (duplicateClientId || forced || wanValidationFailed) {
-            
-            var reason = ""
-            if duplicateClientId        { reason = "Duplicate ClientId" }
-            else if forced              { reason = "Forced" }
-            else if wanValidationFailed { reason = "Wan validation failed" }
-            
-            _api.updateState(to: .clientDisconnected)
-            NC.post(.clientDidDisconnect, object: reason as Any?)
+        if handle == _api.connectionHandle {
+            // parse remaining properties
+            for property in properties.dropFirst(2) {
+                // check for unknown Keys
+                guard let token = ClientTokenV3Disconnection(rawValue: property.key) else {
+                    // log it and ignore this Key
+                    _log("Radio, unknown client disconnection token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
+                    continue
+                }
+                // Known keys, in alphabetical order
+                switch token {
+
+                case .duplicateClientId:    if property.value.bValue { reason = "Duplicate ClientId" }
+                case .forced:               if property.value.bValue { reason = "Forced" }
+                case .wanValidationFailed:  if property.value.bValue { reason = "Wan validation failed" }
+                }
+                _api.updateState(to: .clientDisconnected)
+                NC.post(.clientDidDisconnect, object: reason as Any?)
+            }
         }
     }
     /// Parse a Message.

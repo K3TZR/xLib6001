@@ -161,7 +161,7 @@ extension Interlock: StaticModel {
                 case .source:           source = property.value
                 case .state:            state = property.value
                     // determine if a Mox change is needed
-                    _api.radio!.interlockStateChange(state)
+                    _api.activeRadio!.interlockStateChange(state)
                 case .timeout:          timeout = property.value.iValue
                 case .txAllowed:        txAllowed = property.value.bValue
                 case .txClientHandle:   txClientHandle = property.value.handle ?? 0

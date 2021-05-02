@@ -30,7 +30,7 @@ public final class DaxRxAudioStream: ObservableObject, Identifiable {
     @Published public var slice: xLib6001.Slice?
     
     @Published public var daxChannel = 0 {
-        didSet { slice = _api.radio!.findSlice(using: daxChannel) }}
+        didSet { slice = _api.activeRadio!.findSlice(using: daxChannel) }}
     @Published public var rxGain = 0 {
         didSet { if !_suppress && rxGain != oldValue { audioStreamCmd( "gain", rxGain) }}}
     
@@ -153,9 +153,9 @@ extension DaxRxAudioStream: DynamicModelWithStream {
             case .type:         break  // included to inhibit unknown token warnings
             case .slice:
                 // do we have a good reference to the GUI Client?
-                if let handle = _api.radio!.findHandle(for: _api.radio!.boundClientId) {
+                if let handle = _api.activeRadio!.findHandle(for: _api.activeRadio!.boundClientId) {
                     // YES,
-                    self.slice = _api.radio!.findSlice(letter: property.value, guiClientHandle: handle)
+                    self.slice = _api.activeRadio!.findSlice(letter: property.value, guiClientHandle: handle)
                     let gain = rxGain
                     rxGain = 0
                     rxGain = gain

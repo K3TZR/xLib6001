@@ -103,7 +103,7 @@ public final class OpusAudioStream: ObservableObject, Identifiable {
     /// - Returns:              success / failure
     ///
     public func sendTxAudio(buffer: [UInt8], samples: Int) {
-        if _api.radio!.interlock.state == "TRANSMITTING" {
+        if _api.activeRadio!.interlock.state == "TRANSMITTING" {
             
             // get an OpusTx Vita
             if _vita == nil { _vita = Vita(type: .opusTxV2, streamId: OpusAudioStream.txStreamId) }
@@ -136,7 +136,7 @@ public final class OpusAudioStream: ObservableObject, Identifiable {
         NC.post(.opusAudioStreamWillBeRemoved, object: self as Any?)
         
         // remove it immediately (OpusAudioStream does not send status on removal)
-        _api.radio!.opusAudioStreams[id] = nil
+        _api.activeRadio!.opusAudioStreams[id] = nil
         
         LogProxy.sharedInstance.libMessage("OpusAudioStream removed: id = \(id.hex)", .debug, #function, #file, #line)
         NC.post(.opusAudioStreamHasBeenRemoved, object: id as Any?)

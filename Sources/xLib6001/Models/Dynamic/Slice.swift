@@ -285,7 +285,7 @@ public final class Slice: ObservableObject , Identifiable {
     // MARK: - Private properties
 
     private let _api = Api.sharedInstance
-    private var _diversityIsAllowed: Bool { _api.radio?.radioModel == "FLEX-6700" || _api.radio?.radioModel == "FLEX-6700R" }
+    private var _diversityIsAllowed: Bool { _api.activeRadio?.radioModel == "FLEX-6700" || _api.activeRadio?.radioModel == "FLEX-6700R" }
     private var _initialized = false
     private let _log = LogProxy.sharedInstance.libMessage
     private var _suppress = false
@@ -329,21 +329,21 @@ public final class Slice: ObservableObject , Identifiable {
         _api.send("slice set " + "\(id) " + token.rawValue + "=\(value)")
     }
     private func audioGainCmd(_ value: Double) {
-        if _api.radio!.version.isNewApi {
+        if _api.activeRadio!.version.isNewApi {
             _api.send("slice set " + "\(id) audio_level" + "=\(Int(value))")
         } else {
             _api.send("audio client 0 slice " + "\(id) gain \(Int(value))")
         }
     }
     private func audioMuteCmd(_ value: Bool) {
-        if _api.radio!.version.isNewApi {
+        if _api.activeRadio!.version.isNewApi {
             _api.send("slice set " + "\(id) audio_mute=\(value.as1or0)")
         } else {
             _api.send("audio client 0 slice " + "\(id) mute \(value.as1or0)")
         }
     }
     private func audioPanCmd(_ value: Double) {
-        if _api.radio!.version.isNewApi {
+        if _api.activeRadio!.version.isNewApi {
             _api.send("slice set " + "\(id) audio_pan=\(Int(value))")
         } else {
             _api.send("audio client 0 slice " + "\(id) pan \(Int(value))")
@@ -401,7 +401,7 @@ public final class Slice: ObservableObject , Identifiable {
                 _log("Slice, cannot change Filter width in FM mode", .info, #function, #file, #line)
                 newValue = value
             case .CW:
-                newValue = (newValue > 12_000 - _api.radio!.transmit.cwPitch ? 12_000 - _api.radio!.transmit.cwPitch : newValue)
+                newValue = (newValue > 12_000 - _api.activeRadio!.transmit.cwPitch ? 12_000 - _api.activeRadio!.transmit.cwPitch : newValue)
             case .RTTY:
                 newValue = (newValue > rttyMark ? rttyMark : newValue)
                 newValue = (newValue < 50 ? 50 : newValue)
@@ -432,7 +432,7 @@ public final class Slice: ObservableObject , Identifiable {
                 _log("Slice, cannot change Filter width in FM mode", .info, #function, #file, #line)
                 newValue = value
             case .CW:
-                newValue = (newValue < -12_000 - _api.radio!.transmit.cwPitch ? -12_000 - _api.radio!.transmit.cwPitch : newValue)
+                newValue = (newValue < -12_000 - _api.activeRadio!.transmit.cwPitch ? -12_000 - _api.activeRadio!.transmit.cwPitch : newValue)
             case .RTTY:
                 newValue = (newValue < -12_000 + rttyMark ? -12_000 + rttyMark : newValue)
                 newValue = (newValue > -(50 + rttyShift) ? -(50 + rttyShift) : newValue)
@@ -526,7 +526,7 @@ extension Slice: DynamicModel {
             case .daxChannel:
                 if daxChannel != 0 && property.value.iValue == 0 {
                     // remove this slice from the AudioStream it was using
-                    if let audioStream = _api.radio!.findAudioStream(with: daxChannel) { audioStream.slice = nil }
+                    if let audioStream = _api.activeRadio!.findAudioStream(with: daxChannel) { audioStream.slice = nil }
                 }
                 daxChannel = property.value.iValue
             case .daxTxEnabled:             daxTxEnabled = property.value.bValue

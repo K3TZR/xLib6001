@@ -86,7 +86,7 @@ public final class Tnf: ObservableObject, Identifiable {
         NC.post(.tnfWillBeRemoved, object: self as Any?)
         
         // remove it immediately (Tnf does not send status on removal)
-        _api.radio!.tnfs[id] = nil
+        _api.activeRadio!.tnfs[id] = nil
         
         _log("Tnf, removed: id = \(id)", .debug, #function, #file, #line)
         NC.post(.tnfHasBeenRemoved, object: id as Any?)

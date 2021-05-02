@@ -78,7 +78,7 @@ public final class RemoteTxAudioStream: ObservableObject, Identifiable {
     ///
     public func sendTxAudio(buffer: [UInt8], samples: Int) {
         
-        guard _api.radio!.interlock.state == "TRANSMITTING" else { return }
+        guard _api.activeRadio!.interlock.state == "TRANSMITTING" else { return }
         
         // FIXME: This assumes Opus encoded audio
         if compression == "opus" {

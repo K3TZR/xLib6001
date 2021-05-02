@@ -132,7 +132,7 @@ public final class Memory: ObservableObject, Identifiable {
             switch modeType {
             
             case .CW:
-                newValue = (newValue > 12_000 - _api.radio!.transmit.cwPitch ? 12_000 - _api.radio!.transmit.cwPitch : newValue)
+                newValue = (newValue > 12_000 - _api.activeRadio!.transmit.cwPitch ? 12_000 - _api.activeRadio!.transmit.cwPitch : newValue)
             case .RTTY:
                 newValue = (newValue > 4_000 ? 4_000 : newValue)
             case .AM, .SAM, .FM, .NFM, .DFM:
@@ -160,7 +160,7 @@ public final class Memory: ObservableObject, Identifiable {
             switch modeType {
             
             case .CW:
-                newValue = (newValue < -12_000 - _api.radio!.transmit.cwPitch ? -12_000 - _api.radio!.transmit.cwPitch : newValue)
+                newValue = (newValue < -12_000 - _api.activeRadio!.transmit.cwPitch ? -12_000 - _api.activeRadio!.transmit.cwPitch : newValue)
             case .RTTY:
                 newValue = (newValue < -12_000 ? -12_000 : newValue)
             case .AM, .SAM, .FM, .NFM, .DFM:

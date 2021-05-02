@@ -182,7 +182,7 @@ extension IqStream: DynamicModelWithStream {
             // YES, the Radio (hardware) has acknowledged this Stream
             _initialized = true
             
-            pan = _api.radio!.findPanadapterId(using: daxIqChannel) ?? 0
+            pan = _api.activeRadio!.findPanadapterId(using: daxIqChannel) ?? 0
             
             // notify all observers
             _log("IqStream, added: id = \(id.hex), channel = \(daxIqChannel)", .debug, #function, #file, #line)

@@ -24,7 +24,7 @@ final class NewApiTests: XCTestCase {
         _ = Api.sharedInstance.connect(index: 0, program: "v3Tests", isGui: connectAsGui, logState: logState)
         sleep(2)
         Swift.print("***** Connected")
-        return Api.sharedInstance.radio
+        return Api.sharedInstance.activeRadio
       
     } else {
       XCTFail("----->>>>> No Radio(s) found <<<<<-----\n", file: #function)

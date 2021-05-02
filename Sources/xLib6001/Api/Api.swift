@@ -53,7 +53,6 @@ public final class Api: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Published properties
 
-    @Published public var radio: Radio?
     @Published public var delegate: ApiDelegate?
     @Published public var localIP = ""
     @Published public var localUDPPort: UInt16 = 0
@@ -61,6 +60,7 @@ public final class Api: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
     
+    public var activeRadio: Radio?
     public var messageLogging = false
     public var state: State = .clientDisconnected
     
@@ -268,12 +268,13 @@ public final class Api: ObservableObject {
                 self.reducedDaxBw = reducedDaxBw
                 self.needsNetCwStream = needsCwStream
 
-                radio = Discovery.sharedInstance.radios[index]
+                activeRadio = Discovery.sharedInstance.radios[index]
 
                 return true
             }
         }
         // connection failed
+        activeRadio = nil
         return false
     }
 
@@ -299,79 +300,77 @@ public final class Api: ObservableObject {
     ///
     public func updateState(to newState: State) {
         
-        if let radio = radio {
-            state = newState
+        state = newState
 
-            switch state {
+        switch state {
 
-            case .clientDisconnected:
-                _log("Api client disconnected", .debug, #function, #file, #line)
+        case .clientDisconnected:
+            _log("Api client disconnected", .debug, #function, #file, #line)
 
-            case .clientConnected (let radio) where radio.packet.isWan:
-                // when connecting to a WAN radio, the public IP address of the connected
-                // client must be obtained from the radio.  This value is used to determine
-                // if audio streams from the radio are meant for this client.
-                // (IsAudioStreamStatusForThisClient() checks for LocalIP)
-                send("client ip", replyTo: clientIpReplyHandler)
+        case .clientConnected (let radio) where radio.packet.isWan:
+            // when connecting to a WAN radio, the public IP address of the connected
+            // client must be obtained from the radio.  This value is used to determine
+            // if audio streams from the radio are meant for this client.
+            // (IsAudioStreamStatusForThisClient() checks for LocalIP)
+            send("client ip", replyTo: clientIpReplyHandler)
 
-            case .clientConnected (let radio):
-                // use the ip of the local interface
-                localIP = tcp.interfaceIpAddress
+        case .clientConnected (let radio):
+            // use the ip of the local interface
+            localIP = tcp.interfaceIpAddress
 
-                // complete the connection
-                connectionCompletion(to: radio)
+            // complete the connection
+            connectionCompletion(to: radio)
 
-            case .tcpDisconnected (let reason):
-                // inform observers
-                NC.post(.tcpDidDisconnect, object: reason)
-                _log("Api Tcp Disconnected: reason = \(reason)", .debug, #function, #file, #line)
+        case .tcpDisconnected (let reason):
+            // inform observers
+            NC.post(.tcpDidDisconnect, object: reason)
+            _log("Api Tcp Disconnected: reason = \(reason)", .debug, #function, #file, #line)
 
-                // close the UDP port (it won't be reused with a new connection)
-                udp.unbind(reason: "TCP Disconnected")
+            // close the UDP port (it won't be reused with a new connection)
+            udp.unbind(reason: "TCP Disconnected")
 
-            case .tcpConnected (let host, let port):
-                NC.post(.tcpDidConnect, object: nil)
-                let wanStatus = radio.packet.isWan ? "SMARTLINK" : "LOCAL"
-                let guiStatus = isGui ? "(GUI) " : "(NON-GUI)"
-                _log("Api TCP connected to: \(host), port \(port) \(guiStatus)(\(wanStatus))", .debug, #function, #file, #line)
+        case .tcpConnected (let host, let port):
+            NC.post(.tcpDidConnect, object: nil)
+            let wanStatus = activeRadio!.packet.isWan ? "SMARTLINK" : "LOCAL"
+            let guiStatus = isGui ? "(GUI) " : "(NON-GUI)"
+            _log("Api TCP connected to: \(host), port \(port) \(guiStatus)(\(wanStatus))", .debug, #function, #file, #line)
 
-                if radio.packet.isWan {
-                    send("wan validate handle=" + radio.packet.wanHandle, replyTo: wanValidateReplyHandler)
-                    _log("Api Validate Wan handle: \(radio.packet.wanHandle)", .debug, #function, #file, #line)
+            if activeRadio!.packet.isWan {
+                send("wan validate handle=" + activeRadio!.packet.wanHandle, replyTo: wanValidateReplyHandler)
+                _log("Api Validate Wan handle: \(activeRadio!.packet.wanHandle)", .debug, #function, #file, #line)
 
-                } else {
-                    // bind a UDP port for the Streams
-                    if udp.bind(radio.packet, clientHandle: connectionHandle) == false { tcp.disconnect() }
-                }
-
-            case .wanHandleValidated (let success):
-                if success {
-                    _log("Api Wan handle validated", .debug, #function, #file, #line)
-                    if udp.bind(radio.packet, clientHandle: connectionHandle) == false { tcp.disconnect() }
-                } else {
-                    _log("Api Wan handle validation FAILED", .debug, #function, #file, #line)
-                    tcp.disconnect()
-                }
-
-            case .udpBound (let receivePort, let sendPort):
-                _log("Api UDP bound: receive port \(receivePort), send port \(sendPort)", .debug, #function, #file, #line)
-
-                // if a Wan connection, register
-                if radio.packet.isWan { udp.register(clientHandle: connectionHandle) }
-
-                localUDPPort = receivePort
-
-                // a UDP port has been bound, inform observers
-                NC.post(.udpDidBind, object: nil)
-
-            case .udpUnbound (let reason):
-                _log("Api UDP unbound: reason = \(reason)", .debug, #function, #file, #line)
-                updateState(to: .clientDisconnected)
-
-            case .update:
-                _log("Api Update not supported", .warning, #function, #file, #line)
-                break   // Api Update not supported
+            } else {
+                // bind a UDP port for the Streams
+                if udp.bind(activeRadio!.packet, clientHandle: connectionHandle) == false { tcp.disconnect() }
             }
+
+        case .wanHandleValidated (let success):
+            if success {
+                _log("Api Wan handle validated", .debug, #function, #file, #line)
+                if udp.bind(activeRadio!.packet, clientHandle: connectionHandle) == false { tcp.disconnect() }
+            } else {
+                _log("Api Wan handle validation FAILED", .debug, #function, #file, #line)
+                tcp.disconnect()
+            }
+
+        case .udpBound (let receivePort, let sendPort):
+            _log("Api UDP bound: receive port \(receivePort), send port \(sendPort)", .debug, #function, #file, #line)
+
+            // if a Wan connection, register
+            if activeRadio!.packet.isWan { udp.register(clientHandle: connectionHandle) }
+
+            localUDPPort = receivePort
+
+            // a UDP port has been bound, inform observers
+            NC.post(.udpDidBind, object: nil)
+
+        case .udpUnbound (let reason):
+            _log("Api UDP unbound: reason = \(reason)", .debug, #function, #file, #line)
+            updateState(to: .clientDisconnected)
+
+        case .update:
+            _log("Api Update not supported", .warning, #function, #file, #line)
+            break   // Api Update not supported
         }
     }
 
@@ -380,7 +379,7 @@ public final class Api: ObservableObject {
     ///
     public func disconnect(reason: String = "User Initiated") {
 
-        let name = radio?.packet.nickname ?? "Unknown"
+        let name = activeRadio?.packet.nickname ?? "Unknown"
         _log("Api disconnect initiated:", .debug, #function, #file, #line)
 
         // stop all streams
@@ -391,13 +390,13 @@ public final class Api: ObservableObject {
         _pinger = nil
 
         // the radio (if any) will be disconnected, inform observers
-        NC.post(.radioWillBeRemoved, object: radio as Any?)
+        NC.post(.radioWillBeRemoved, object: activeRadio as Any?)
 
         // disconnect TCP
         tcp.disconnect()
 
         // remove the Radio
-        radio = nil
+        activeRadio = nil
 
         // the radio has been disconnected, inform observers
         NC.post(.radioHasBeenRemoved, object: name)
@@ -535,7 +534,7 @@ public final class Api: ObservableObject {
     ///   - responseValue:          the response contained in the Reply to the Command
     ///   - reply:                  the descriptive text contained in the Reply to the Command
     private func clientIpReplyHandler(_ command: String, seqNum: UInt, responseValue: String, reply: String) {
-        if let radio = radio {
+        if let radio = activeRadio {
             // was an error code returned?
             if responseValue == Api.kNoError {
                 // NO, the reply value is the IP address

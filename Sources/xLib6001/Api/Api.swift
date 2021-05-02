@@ -60,7 +60,11 @@ public final class Api: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
     
-    public var activeRadio: Radio?
+    public var activeRadio: Radio? {
+        get { Api.objectQ.sync { _activeRadio } }
+        set { Api.objectQ.sync(flags: .barrier) { _activeRadio = newValue }}}
+    private var _activeRadio: Radio?
+
     public var messageLogging = false
     public var state: State = .clientDisconnected
     
@@ -122,8 +126,6 @@ public final class Api: ObservableObject {
         case oldApi
         case newApi (handle: Handle)
     }
-    
-    @Published public var guiClients = [Handle: GuiClient]()
     
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties

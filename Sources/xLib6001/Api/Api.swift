@@ -257,7 +257,9 @@ public final class Api {
                                       needsCwStream: needsCwStream,
                                       pendingDisconnect: pendingDisconnect)
         self.nsLogState = logState
-        
+
+        delegate = Discovery.sharedInstance.radios[index]
+
         // attempt to connect to the Radio
         if let packet = Discovery.sharedInstance.radios[index].packet {
             if tcp.connect(packet) {
@@ -278,6 +280,7 @@ public final class Api {
             }
         }
         // connection failed
+        delegate = nil
         activeRadio = nil
         return false
     }

@@ -396,7 +396,7 @@ public final class Radio: ObservableObject {
         self.packet = packet
         version = Version(packet.firmwareVersion)
         
-        _api.delegate = self
+        _api.apiDelegate = self
         radioType = RadioTypes(rawValue: packet.model.lowercased())
         if radioType == nil { _log("Radio, unknown model: \(packet.model)", .warning, #function, #file, #line) }
         
@@ -425,33 +425,17 @@ public final class Radio: ObservableObject {
         //      NOTE: order is important
         
         // notify all observers, then remove
-        // TODO: Differentiate between v3 and earlier? For now remove all - DL3LSM
-//        audioStreams.forEach( { NC.post(.audioStreamWillBeRemoved, object: $0.value as Any?) } )
-//        audioStreams.removeAll()
-        
         daxRxAudioStreams.forEach( { NC.post(.daxRxAudioStreamWillBeRemoved, object: $0.value as Any?) } )
         daxRxAudioStreams.removeAll()
-        
-//        iqStreams.forEach( { NC.post(.iqStreamWillBeRemoved, object: $0.value as Any?) } )
-//        iqStreams.removeAll()
         
         daxIqStreams.forEach( { NC.post(.daxIqStreamWillBeRemoved, object: $0.value as Any?) } )
         daxIqStreams.removeAll()
         
-//        micAudioStreams.forEach( {NC.post(.micAudioStreamWillBeRemoved, object: $0.value as Any?)} )
-//        micAudioStreams.removeAll()
-        
         daxMicAudioStreams.forEach( {NC.post(.daxMicAudioStreamWillBeRemoved, object: $0.value as Any?)} )
         daxMicAudioStreams.removeAll()
         
-//        txAudioStreams.forEach( { NC.post(.txAudioStreamWillBeRemoved, object: $0.value as Any?) } )
-//        txAudioStreams.removeAll()
-        
         daxTxAudioStreams.forEach( { NC.post(.daxTxAudioStreamWillBeRemoved, object: $0.value as Any?) } )
         daxTxAudioStreams.removeAll()
-        
-//        opusAudioStreams.forEach( { NC.post(.opusAudioStreamWillBeRemoved, object: $0.value as Any?) } )
-//        opusAudioStreams.removeAll()
         
         remoteRxAudioStreams.forEach( { NC.post(.remoteRxAudioStreamWillBeRemoved, object: $0.value as Any?) } )
         remoteRxAudioStreams.removeAll()

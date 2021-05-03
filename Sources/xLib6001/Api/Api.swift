@@ -29,13 +29,12 @@ public protocol ApiDelegate {
 ///      Radio hardware)
 ///
 public final class Api {
-    
     public typealias CommandTuple = (command: String, diagnostic: Bool, replyHandler: ReplyHandler?)
     
     // ----------------------------------------------------------------------------
     // MARK: - Static properties
     
-    public static let kVersionSupported = Version("3.2.14")
+    public static let kVersionSupported = Version("3.2.34")
     
     public static let kBundleIdentifier = "net.k3tzr." + Api.kName
     public static let kDaxChannels      = ["None", "1", "2", "3", "4", "5", "6", "7", "8"]
@@ -57,16 +56,14 @@ public final class Api {
         get { Api.objectQ.sync { _activeRadio } }
         set { Api.objectQ.sync(flags: .barrier) { _activeRadio = newValue }}}
 
+    public var apiDelegate: ApiDelegate?
+    public var apiState: ApiState = .clientDisconnected
     public var connectionHandle: Handle?
-    public var delegate: ApiDelegate?
     public var isGui = true
-    public var needsNetCwStream = false
     public var nsLogState: NSLogging = .normal
-    public var reducedDaxBw = false
-    public var state: State = .clientDisconnected
-    public var testerDelegate : ApiDelegate?
-    public var testerModeEnabled = false
     public var pingerEnabled = true
+    public var testerDelegate: ApiDelegate?
+    public var testerModeEnabled = false
 
     public struct ConnectionParams {
         public init(index: Int,
@@ -75,7 +72,8 @@ public final class Api {
                     clientId: String? = nil,
                     isGui: Bool = true,
                     wanHandle: String = "",
-                    reducedDaxBw: Bool = false,
+                    lowBandwidthConnect: Bool = false,
+                    lowBandwidthDax: Bool = false,
                     logState: Api.NSLogging = NSLogging.normal,
                     needsCwStream: Bool = false,
                     pendingDisconnect: Api.PendingDisconnect = PendingDisconnect.none) {
@@ -86,7 +84,8 @@ public final class Api {
             self.clientId = clientId
             self.isGui = isGui
             self.wanHandle = wanHandle
-            self.reducedDaxBw = reducedDaxBw
+            self.lowBandwidthConnect = lowBandwidthConnect
+            self.lowBandwidthDax = lowBandwidthDax
             self.logState = logState
             self.needsCwStream = needsCwStream
             self.pendingDisconnect = pendingDisconnect
@@ -98,12 +97,13 @@ public final class Api {
         public var clientId: String?
         public var isGui = true
         public var wanHandle = ""
-        public var reducedDaxBw = false
+        public var lowBandwidthConnect = false
+        public var lowBandwidthDax = false
         public var logState = NSLogging.normal
         public var needsCwStream = false
         public var pendingDisconnect = PendingDisconnect.none
     }
-    public enum State {
+    public enum ApiState {
         case tcpConnected (host: String, port: UInt16)
         case udpBound (receivePort: UInt16, sendPort: UInt16)
         case clientDisconnected
@@ -113,7 +113,7 @@ public final class Api {
         case udpUnbound (reason: String)
         case update
         
-        public static func ==(lhs: State, rhs: State) -> Bool {
+        public static func ==(lhs: ApiState, rhs: ApiState) -> Bool {
             switch (lhs, rhs) {
             case (.tcpConnected, .tcpConnected):                  return true
             case (.udpBound, .udpBound):                          return true
@@ -126,7 +126,7 @@ public final class Api {
             default:                                              return false
             }
         }
-        public static func !=(lhs: State, rhs: State) -> Bool {
+        public static func !=(lhs: ApiState, rhs: ApiState) -> Bool {
             return !(lhs == rhs)
         }
     }
@@ -137,8 +137,7 @@ public final class Api {
     }
     public enum PendingDisconnect: Equatable {
         case none
-        case oldApi
-        case newApi (handle: Handle)
+        case some (handle: Handle)
     }
     
     // ----------------------------------------------------------------------------
@@ -151,14 +150,10 @@ public final class Api {
     // MARK: - Private properties
     
     private var _activeRadio: Radio?
-    private var _clientId: String?
-    private var _clientStation = ""
     private let _log = LogProxy.sharedInstance.libMessage
-    private var _lowBandwidthConnect = false
     private var _params: ConnectionParams!
     private var _pinger: Pinger?
-    private var _programName = ""
-    
+
     // GCD Serial Queues
     private let _parseQ         = DispatchQueue(label: Api.kName + ".parseQ", qos: .userInteractive)
     private let _tcpReceiveQ    = DispatchQueue(label: Api.kName + ".tcpReceiveQ")
@@ -166,7 +161,6 @@ public final class Api {
     private let _udpReceiveQ    = DispatchQueue(label: Api.kName + ".udpReceiveQ", qos: .userInteractive)
     private let _udpRegisterQ   = DispatchQueue(label: Api.kName + ".udpRegisterQ")
     private let _workerQ        = DispatchQueue(label: Api.kName + ".workerQ")
-    
 
     // ----------------------------------------------------------------------------
     // MARK: - Singleton
@@ -226,37 +220,24 @@ public final class Api {
     ///
     ///     Scenarios 2 & 4 are typically executed once which then allows the Client to use scenarios 1 & 3
     ///     for all subsequent connections (if the Client has persisted the ClientId)
-    ///
-    /// - Parameters:
-    ///     - packet:               a DiscoveredRadio struct for the desired Radio
-    ///     - station:              the name of the Station using this library (V3 only)
-    ///     - program:              the name of the Client app using this library
-    ///     - clientId:             a UUID String (if any) (V3 only)
-    ///     - isGui:                whether this is a GUI connection
-    ///     - wanHandle:            Wan Handle (if any)
-    ///     - reducedDaxBw:         Use reduced bandwidth for Dax
-    ///     - logState:             Suppress NSLogs when no Log delegate
-    ///     - needsCwStream:        cleint application needs the network cw stream
-    ///     - pendingDisconnect:    perform a disconnect before connecting
-    ///
-
+    /// - Parameter params:     a struct of parameters
+    /// - Returns:              success / failure
     public func connect(_ params: ConnectionParams) -> Bool {
 
         guard Discovery.sharedInstance.radios.count > params.index else {
             _log("Api, Invalid radios index: count = \(Discovery.sharedInstance.radios.count), index = \(params.index)", .error, #function, #file, #line)
             fatalError("Invalid radios index")
         }
-        // must be in the Disconnected state to connect
-        guard state == .clientDisconnected else {
-            _log("Api, Invalid state on connect: state != .clientDisconnected", .warning, #function, #file, #line)
+        guard apiState == .clientDisconnected else {
+            _log("Api, Invalid state on connect: apiState != .clientDisconnected", .warning, #function, #file, #line)
             return false
         }
-        
         // save the connection parameters
         _params = params
         self.nsLogState = params.logState
 
-        delegate = Discovery.sharedInstance.radios[params.index]
+        // make the Radio the Api delegate
+        apiDelegate = Discovery.sharedInstance.radios[params.index]
 
         // attempt to connect to the Radio
         if let packet = Discovery.sharedInstance.radios[params.index].packet {
@@ -265,42 +246,26 @@ public final class Api {
                 // Connected, check the versions
                 checkVersion(packet)
 
-                _programName = params.program
-                _clientId = params.clientId
-                _clientStation = params.station
                 self.isGui = (params.pendingDisconnect == .none ? isGui : false)
-                self.reducedDaxBw = params.reducedDaxBw
-                self.needsNetCwStream = params.needsCwStream
-
                 activeRadio = Discovery.sharedInstance.radios[params.index]
 
                 return true
             }
         }
         // connection failed
-        delegate = nil
+        apiDelegate = nil
         activeRadio = nil
         return false
     }
-//
-//    /// Alternate form of connect
-//    /// - Parameter params:     connection parameters struct
-//    ///
-//    public func connectAfterDisconnect(_ params: ApiConnectionParams) -> Bool {
-//
-//        return connect( params )
-//    }
 
     /// Change the state of the API
     /// - Parameter newState: the new state
-    ///
-    public func updateState(to newState: State) {
-        state = newState
+    public func updateState(to newState: ApiState) {
+        apiState = newState
 
-        switch state {
+        switch apiState {
 
         // Connection -----------------------------------------------------------------------------
-
         case .tcpConnected (let host, let port):
             _log("Api TCP connected to: \(host), port \(port)", .debug, #function, #file, #line)
             NC.post(.tcpDidConnect, object: nil)
@@ -346,7 +311,6 @@ public final class Api {
             connectionCompletion(to: radio)
 
         // Disconnection --------------------------------------------------------------------------
-
         case .tcpDisconnected (let reason):
             _log("Api Tcp Disconnected: reason = \(reason)", .debug, #function, #file, #line)
             NC.post(.tcpDidDisconnect, object: reason)
@@ -362,7 +326,6 @@ public final class Api {
             _log("Api client disconnected", .debug, #function, #file, #line)
 
         // Not Implemented ------------------------------------------------------------------------
-
         case .update:
             _log("Api Update not implemented", .warning, #function, #file, #line)
             break
@@ -373,32 +336,35 @@ public final class Api {
     /// - Parameter reason:         a reason code
     ///
     public func disconnect(reason: String = "User Initiated") {
-
         let name = activeRadio?.packet.nickname ?? "Unknown"
-        _log("Api disconnect initiated:", .debug, #function, #file, #line)
+        _log("Api disconnect initiated: fir radio = \(name)", .debug, #function, #file, #line)
 
         // stop all streams
-        delegate = nil
+        apiDelegate = nil
 
         // stop pinging (if active)
         _pinger?.stop()
         _pinger = nil
 
-        // the radio (if any) will be disconnected, inform observers
-        NC.post(.radioWillBeRemoved, object: activeRadio as Any?)
+        // the radio (if any) will be disconnected
+        NC.post(.radioWillBeDisconnected, object: activeRadio as Any?)
 
         // disconnect TCP
         tcp.disconnect()
 
         activeRadio?.removeAllObjects()
 
-        // remove the Radio
+        // remove the reference to the Radio
         activeRadio = nil
 
         // the radio has been disconnected, inform observers
-        NC.post(.radioHasBeenRemoved, object: name)
+        NC.post(.radioHasBeenDisconnected, object: name)
     }
-    
+
+    /// Request a Client disconnection
+    /// - Parameters:
+    ///   - packet:     the  packet of the radio
+    ///   - handle:     the handle
     public func requestClientDisconnect(packet: DiscoveryPacket, handle: Handle) {
         if packet.isWan {
             // FIXME: Does this need to be a TLS send?
@@ -419,7 +385,7 @@ public final class Api {
         let sequenceNumber = tcp.send(command, diagnostic: flag)
         
         // register to be notified when reply received
-        delegate?.addReplyHandler( sequenceNumber, replyTuple: (replyTo: callback, command: command) )
+        apiDelegate?.addReplyHandler( sequenceNumber, replyTuple: (replyTo: callback, command: command) )
     }
     
     // ----------------------------------------------------------------------------
@@ -439,25 +405,23 @@ public final class Api {
         if _params.pendingDisconnect == .none { if pingerEnabled { _pinger = Pinger(tcpManager: tcp) }}
 
         // ask for a CW stream (if requested)
-        if _params.pendingDisconnect == .none { if needsNetCwStream { radio.requestNetCwStream() } }
+        if _params.pendingDisconnect == .none { if _params.needsCwStream { radio.requestNetCwStream() } }
 
-        // TCP & UDP connections established, inform observers
+        // TCP & UDP connections established
         NC.post(.clientDidConnect, object: radio as Any?)
 
-        // handle any required disconnections
+        // handle any pending disconnection
         disconnectAsNeeded(_params)
     }
     
     /// Perform required disconnections
     /// - Parameter params:     connection parameters struct
-    ///
     private func disconnectAsNeeded(_ params: ConnectionParams) {
         
         // is there a pending disconnect?
         switch params.pendingDisconnect {
-        case .none:                 return                                    // NO, currently connected to the desired radio
-        case .oldApi:               send("client disconnect")                 // YES, oldApi, disconnect all clients
-        case .newApi(let handle):   send("client disconnect \(handle.hex)")   // YES, newApi, disconnect a specific client
+        case .none:                 return                                  // NO, currently connected to the desired radio
+        case .some(let handle):   send("client disconnect \(handle.hex)")   // YES, disconnect a specific client
         }
         // give client disconnection time to happen, then disconnect and restart the process
         sleep(1)
@@ -471,19 +435,16 @@ public final class Api {
     /// Send commands to configure the connection
     private func sendCommands(to radio: Radio) {
         if isGui {
-//            if radio.version.isNewApi && _clientId != nil   {
-            if _clientId != nil   {
-                send("client gui " + _clientId!)
+            if _params.clientId != nil   {
+                send("client gui " + _params.clientId!)
             } else {
                 send("client gui")
             }
         }
-        send("client program " + _programName)
-//        if radio.version.isNewApi && isGui                       { send("client station " + _clientStation) }
-//        if radio.version.isNewApi && !isGui && _clientId != nil  { radio.bindGuiClient(_clientId!) }
-        if isGui { send("client station " + _clientStation) }
-        if !isGui && _clientId != nil { radio.bindGuiClient(_clientId!) }
-        if _lowBandwidthConnect { radio.requestLowBandwidthConnect() }
+        send("client program " + _params.program)
+        if isGui { send("client station " + _params.station) }
+        if !isGui && _params.clientId != nil { radio.bindGuiClient(_params.clientId!) }
+        if _params.lowBandwidthConnect { radio.requestLowBandwidthConnect() }
         radio.requestInfo()
         radio.requestVersion()
         radio.requestAntennaList()
@@ -493,18 +454,14 @@ public final class Api {
         radio.requestMicProfile()
         radio.requestDisplayProfile()
         radio.requestSubAll()
-//        if radio.version.isGreaterThanV22 { radio.requestMtuLimit(1_500) }
-//        if radio.version.isNewApi         { radio.requestDaxBandwidthLimit(self.reducedDaxBw) }
         radio.requestMtuLimit(1_500)
-        radio.requestDaxBandwidthLimit(self.reducedDaxBw)
+        if _params.lowBandwidthDax { radio.requestLowBandwidthDax(_params.lowBandwidthDax) }
     }
 
     /// Determine if the Radio Firmware version is compatable with the API version
     /// - Parameters:
     ///   - selectedRadio:      a RadioParameters struct
-    ///
     private func checkVersion(_ packet: DiscoveryPacket) {
-        
         // get the Radio Version
         let radioVersion = Version(packet.firmwareVersion)
         
@@ -537,12 +494,13 @@ public final class Api {
             if responseValue == Api.kNoError {
                 // NO, the reply value is the IP address
 //                localIP = reply.isValidIP4() ? reply : "0.0.0.0"
+                connectionCompletion(to: radio)
 
             } else {
                 // YES, use the ip of the local interface
-//                localIP = tcp.interfaceIpAddress
+                _log("Api, client ip command returned an error: \(responseValue)", .error, #function, #file, #line)
+                fatalError("Api, client ip command returned an error: \(responseValue)")
             }
-            connectionCompletion(to: radio)
         }
     }
 }
@@ -552,19 +510,17 @@ public final class Api {
 extension Api: TcpManagerDelegate {
 
     func didSend(_ msg: String) {
-        // pass it to any delegates
-        delegate?.sentMessage( String(msg.dropLast()) )
+        // pass it to delegates
+        apiDelegate?.sentMessage( String(msg.dropLast()) )
         testerDelegate?.sentMessage( String(msg.dropLast()) )
     }
 
     func didReceive(_ msg: String) {
         // is it a non-empty message?
         if msg.count > 1 {
-            // YES, pass it to any delegates (async on the parseQ)
+            // YES, pass it to any delegates
             _parseQ.async { [ unowned self ] in
-                self.delegate?.receivedMessage( String(msg.dropLast()) )
-                
-                // pass it to xAPITester (if present)
+                self.apiDelegate?.receivedMessage( String(msg.dropLast()) )
                 self.testerDelegate?.receivedMessage( String(msg.dropLast()) )
             }
         }
@@ -580,6 +536,7 @@ extension Api: TcpManagerDelegate {
     }
 }
 
+// ----------------------------------------------------------------------------
 
 extension Api: UdpManagerDelegate {
 
@@ -592,6 +549,6 @@ extension Api: UdpManagerDelegate {
     }
 
     func udpStreamHandler(_ vitaPacket: Vita) {
-        delegate?.vitaParser(vitaPacket)
+        apiDelegate?.vitaParser(vitaPacket)
     }
 }

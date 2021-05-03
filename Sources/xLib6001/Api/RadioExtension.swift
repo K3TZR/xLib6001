@@ -421,7 +421,7 @@ extension Radio {
     ///   - size:         MTU size
     ///   - callback:     ReplyHandler (optional)
     ///
-    public func requestDaxBandwidthLimit(_ enable: Bool, callback: ReplyHandler? = nil) {
+    public func requestLowBandwidthDax(_ enable: Bool, callback: ReplyHandler? = nil) {
         _api.send("client set send_reduced_bw_dax=\(enable.as1or0)")
     }
     /// Request a List of Antenna sources

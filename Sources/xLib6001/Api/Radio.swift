@@ -752,17 +752,6 @@ public final class Radio: ObservableObject {
         }
         if version.isNewApi {
             // check if we received a status message for our handle to see if our client is connected now
-
-
-
-
-            _log("Radio, ParseStatus: _clientInitialized = \(_clientInitialized), components[0].handle = \(components[0].handle?.hex ?? "nil"), _api.connectionHandle = \(_api.connectionHandle?.hex ?? "nil")", .warning, #function, #file, #line)
-
-
-
-
-
-
             if !_clientInitialized && components[0].handle == _api.connectionHandle {
                 
                 // YES
@@ -1294,15 +1283,7 @@ extension Radio: ApiDelegate {
         // switch on the first character
         switch msg[msg.startIndex] {
         
-        case "H", "h":
-            _api.connectionHandle = suffix.handle
-
-
-
-            _log("Radio, suffix = \(suffix), handle = \( _api.connectionHandle?.hex ?? "nil")", .warning, #function, #file, #line)
-
-
-
+        case "H", "h":  _api.connectionHandle = suffix.handle
         case "M", "m":  parseMessage(suffix)
         case "R", "r":  parseReply(suffix)
         case "S", "s":  parseStatus(suffix)

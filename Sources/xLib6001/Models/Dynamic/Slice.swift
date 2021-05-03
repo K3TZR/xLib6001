@@ -329,25 +329,25 @@ public final class Slice: ObservableObject , Identifiable {
         _api.send("slice set " + "\(id) " + token.rawValue + "=\(value)")
     }
     private func audioGainCmd(_ value: Double) {
-        if _api.activeRadio!.version.isNewApi {
+//        if _api.activeRadio!.version.isNewApi {
             _api.send("slice set " + "\(id) audio_level" + "=\(Int(value))")
-        } else {
-            _api.send("audio client 0 slice " + "\(id) gain \(Int(value))")
-        }
+//        } else {
+//            _api.send("audio client 0 slice " + "\(id) gain \(Int(value))")
+//        }
     }
     private func audioMuteCmd(_ value: Bool) {
-        if _api.activeRadio!.version.isNewApi {
+//        if _api.activeRadio!.version.isNewApi {
             _api.send("slice set " + "\(id) audio_mute=\(value.as1or0)")
-        } else {
-            _api.send("audio client 0 slice " + "\(id) mute \(value.as1or0)")
-        }
+//        } else {
+//            _api.send("audio client 0 slice " + "\(id) mute \(value.as1or0)")
+//        }
     }
     private func audioPanCmd(_ value: Double) {
-        if _api.activeRadio!.version.isNewApi {
+//        if _api.activeRadio!.version.isNewApi {
             _api.send("slice set " + "\(id) audio_pan=\(Int(value))")
-        } else {
-            _api.send("audio client 0 slice " + "\(id) pan \(Int(value))")
-        }
+//        } else {
+//            _api.send("audio client 0 slice " + "\(id) pan \(Int(value))")
+//        }
     }
     private func filterCmd(low: Any, high: Any) {
         _api.send("filt " + "\(id)" + " \(low)" + " \(high)")
@@ -526,7 +526,7 @@ extension Slice: DynamicModel {
             case .daxChannel:
                 if daxChannel != 0 && property.value.iValue == 0 {
                     // remove this slice from the AudioStream it was using
-                    if let audioStream = _api.activeRadio!.findAudioStream(with: daxChannel) { audioStream.slice = nil }
+                    if let daxRxAudioStream = _api.activeRadio!.findDaxRxAudioStream(with: daxChannel) { daxRxAudioStream.slice = nil }
                 }
                 daxChannel = property.value.iValue
             case .daxTxEnabled:             daxTxEnabled = property.value.bValue

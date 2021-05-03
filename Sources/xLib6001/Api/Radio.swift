@@ -27,18 +27,18 @@ public final class Radio: ObservableObject {
     
     // Dynamic Model Collections
     @Published public var amplifiers = [AmplifierId: Amplifier]()
-    @Published public var audioStreams = [AudioStreamId: AudioStream]()
+//    @Published public var audioStreams = [AudioStreamId: AudioStream]()
     @Published public var bandSettings = [BandId: BandSetting]()
     @Published public var daxIqStreams = [DaxIqStreamId: DaxIqStream]()
     @Published public var daxMicAudioStreams = [DaxMicStreamId: DaxMicAudioStream]()
     @Published public var daxRxAudioStreams = [DaxRxStreamId: DaxRxAudioStream]()
     @Published public var daxTxAudioStreams = [DaxTxStreamId: DaxTxAudioStream]()
     @Published public var equalizers = [Equalizer.EqType: Equalizer]()
-    @Published public var iqStreams = [DaxIqStreamId: IqStream]()
+//    @Published public var iqStreams = [DaxIqStreamId: IqStream]()
     @Published public var memories = [MemoryId: Memory]()
     @Published public var meters = [MeterId: Meter]()
-    @Published public var micAudioStreams = [DaxMicStreamId: MicAudioStream]()
-    @Published public var opusAudioStreams = [OpusStreamId: OpusAudioStream]()
+//    @Published public var micAudioStreams = [DaxMicStreamId: MicAudioStream]()
+//    @Published public var opusAudioStreams = [OpusStreamId: OpusAudioStream]()
     @Published public var panadapters = [PanadapterStreamId: Panadapter]()
     @Published public var profiles = [ProfileId: Profile]()
     @Published public var remoteRxAudioStreams = [RemoteRxStreamId: RemoteRxAudioStream]()
@@ -46,7 +46,7 @@ public final class Radio: ObservableObject {
 //    @Published public var replyHandlers = [SequenceNumber: ReplyTuple]()
     @Published public var slices = [SliceId: Slice]()
     @Published public var tnfs = [TnfId: Tnf]()
-    @Published public var txAudioStreams = [TxStreamId: TxAudioStream]()
+//    @Published public var txAudioStreams = [TxStreamId: TxAudioStream]()
     @Published public var usbCables = [UsbCableId: UsbCable]()
     @Published public var waterfalls = [WaterfallStreamId: Waterfall]()
     @Published public var xvtrs = [XvtrId: Xvtr]()
@@ -309,11 +309,11 @@ public final class Radio: ObservableObject {
     }
     enum StatusTokens: String {
         case amplifier
-        case audioStream      = "audio_stream"  // (pre V3 only)
+//        case audioStream      = "audio_stream"  // (pre V3 only)
         case atu
         case client
         case cwx
-        case daxiq      // obsolete token, included to prevent log messages
+//        case daxiq      // obsolete token, included to prevent log messages
         case display
         case eq
         case file
@@ -321,9 +321,9 @@ public final class Radio: ObservableObject {
         case interlock
         case memory
         case meter
-        case micAudioStream   = "mic_audio_stream"  // (pre V3 only)
+//        case micAudioStream   = "mic_audio_stream"  // (pre V3 only)
         case mixer
-        case opusStream       = "opus_stream"
+//        case opusStream       = "opus_stream"
         case profile
         case radio
         case slice
@@ -331,7 +331,7 @@ public final class Radio: ObservableObject {
         case tnf
         case transmit
         case turf
-        case txAudioStream    = "tx_audio_stream"  // (pre V3 only)
+//        case txAudioStream    = "tx_audio_stream"  // (pre V3 only)
         case usbCable         = "usb_cable"
         case wan
         case waveform
@@ -426,32 +426,32 @@ public final class Radio: ObservableObject {
         
         // notify all observers, then remove
         // TODO: Differentiate between v3 and earlier? For now remove all - DL3LSM
-        audioStreams.forEach( { NC.post(.audioStreamWillBeRemoved, object: $0.value as Any?) } )
-        audioStreams.removeAll()
+//        audioStreams.forEach( { NC.post(.audioStreamWillBeRemoved, object: $0.value as Any?) } )
+//        audioStreams.removeAll()
         
         daxRxAudioStreams.forEach( { NC.post(.daxRxAudioStreamWillBeRemoved, object: $0.value as Any?) } )
         daxRxAudioStreams.removeAll()
         
-        iqStreams.forEach( { NC.post(.iqStreamWillBeRemoved, object: $0.value as Any?) } )
-        iqStreams.removeAll()
+//        iqStreams.forEach( { NC.post(.iqStreamWillBeRemoved, object: $0.value as Any?) } )
+//        iqStreams.removeAll()
         
         daxIqStreams.forEach( { NC.post(.daxIqStreamWillBeRemoved, object: $0.value as Any?) } )
         daxIqStreams.removeAll()
         
-        micAudioStreams.forEach( {NC.post(.micAudioStreamWillBeRemoved, object: $0.value as Any?)} )
-        micAudioStreams.removeAll()
+//        micAudioStreams.forEach( {NC.post(.micAudioStreamWillBeRemoved, object: $0.value as Any?)} )
+//        micAudioStreams.removeAll()
         
         daxMicAudioStreams.forEach( {NC.post(.daxMicAudioStreamWillBeRemoved, object: $0.value as Any?)} )
         daxMicAudioStreams.removeAll()
         
-        txAudioStreams.forEach( { NC.post(.txAudioStreamWillBeRemoved, object: $0.value as Any?) } )
-        txAudioStreams.removeAll()
+//        txAudioStreams.forEach( { NC.post(.txAudioStreamWillBeRemoved, object: $0.value as Any?) } )
+//        txAudioStreams.removeAll()
         
         daxTxAudioStreams.forEach( { NC.post(.daxTxAudioStreamWillBeRemoved, object: $0.value as Any?) } )
         daxTxAudioStreams.removeAll()
         
-        opusAudioStreams.forEach( { NC.post(.opusAudioStreamWillBeRemoved, object: $0.value as Any?) } )
-        opusAudioStreams.removeAll()
+//        opusAudioStreams.forEach( { NC.post(.opusAudioStreamWillBeRemoved, object: $0.value as Any?) } )
+//        opusAudioStreams.removeAll()
         
         remoteRxAudioStreams.forEach( { NC.post(.remoteRxAudioStreamWillBeRemoved, object: $0.value as Any?) } )
         remoteRxAudioStreams.removeAll()
@@ -722,11 +722,11 @@ public final class Radio: ObservableObject {
         switch token {
         
         case .amplifier:      Amplifier.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kRemoved))
-        case .audioStream:    AudioStream.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kNotInUse))
+//        case .audioStream:    AudioStream.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kNotInUse))
         case .atu:            atu.parseProperties(remainder.keyValuesArray() )
         case .client:         parseClient(self, remainder.keyValuesArray(), !remainder.contains(Api.kDisconnected))
         case .cwx:            cwx.parseProperties(remainder.fix().keyValuesArray() )
-        case .daxiq:          break  // no longer in use
+//        case .daxiq:          break  // no longer in use
         case .display:        parseDisplay(self, remainder.keyValuesArray(), !remainder.contains(Api.kRemoved))
         case .eq:             Equalizer.parseStatus(self, remainder.keyValuesArray())
         case .file:           _log("Radio, unprocessed \(msgType) message: \(remainder)", .warning, #function, #file, #line)
@@ -734,9 +734,9 @@ public final class Radio: ObservableObject {
         case .interlock:      parseInterlock(self, remainder.keyValuesArray(), !remainder.contains(Api.kRemoved))
         case .memory:         Memory.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kRemoved))
         case .meter:          Meter.parseStatus(self, remainder.keyValuesArray(delimiter: "#"), !remainder.contains(Api.kRemoved))
-        case .micAudioStream: MicAudioStream.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kNotInUse))
+//        case .micAudioStream: MicAudioStream.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kNotInUse))
         case .mixer:          _log("Radio, unprocessed \(msgType) message: \(remainder)", .warning, #function, #file, #line)
-        case .opusStream:     OpusAudioStream.parseStatus(self, remainder.keyValuesArray())
+//        case .opusStream:     OpusAudioStream.parseStatus(self, remainder.keyValuesArray())
         case .profile:        Profile.parseStatus(self, remainder.keyValuesArray(delimiter: "="))
         case .radio:          parseProperties(remainder.keyValuesArray())
         case .slice:          xLib6001.Slice.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kNotInUse))
@@ -744,13 +744,13 @@ public final class Radio: ObservableObject {
         case .tnf:            Tnf.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kRemoved))
         case .transmit:       parseTransmit(self, remainder.keyValuesArray(), !remainder.contains(Api.kRemoved))
         case .turf:           _log("Radio, unprocessed \(msgType) message: \(remainder)", .warning, #function, #file, #line)
-        case .txAudioStream:  TxAudioStream.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kRemoved))
+//        case .txAudioStream:  TxAudioStream.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kRemoved))
         case .usbCable:       UsbCable.parseStatus(self, remainder.keyValuesArray())
         case .wan:            parseProperties(remainder.keyValuesArray())
         case .waveform:       waveform.parseProperties(remainder.keyValuesArray())
         case .xvtr:           Xvtr.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kNotInUse))
         }
-        if version.isNewApi {
+//        if version.isNewApi {
             // check if we received a status message for our handle to see if our client is connected now
             if !_clientInitialized && components[0].handle == _api.connectionHandle {
                 
@@ -760,7 +760,7 @@ public final class Radio: ObservableObject {
                 // set the API state to finish the UDP initialization
                 _api.updateState(to: .clientConnected(radio: self))
             }
-        }
+//        }
     }
     /// Parse a Client status message
     ///   Format: client <handle> connected
@@ -778,7 +778,7 @@ public final class Radio: ObservableObject {
         // is there a valid handle"
         if let handle = properties[0].key.handle {
             
-            if version.isNewApi {
+//            if version.isNewApi {
                 
                 switch properties[1].key {
                 
@@ -787,27 +787,27 @@ public final class Radio: ObservableObject {
                 default:                    break
                 }
                 
-            } else {
-                // guard that the message has my API Handle
-                guard _api.connectionHandle! == handle else { return }
-                
-                // pre V3
-                // is it In Use?
-                if inUse {
-                    
-                    // YES, Finish the UDP initialization & set the API state
-                    _api.updateState(to: .clientConnected(radio: radio))
-                    
-                } else {
-                    // pre V3 API
-                    if properties[2].key == "forced" {
-                        // NO, Disconnected
-                        _log("Radio, disconnect: forced = \(properties[2].value)", .info, #function, #file, #line)
-                        
-                        NC.post(.clientDidDisconnect, object: handle as Any?)
-                    }
-                }
-            }
+//            } else {
+//                // guard that the message has my API Handle
+//                guard _api.connectionHandle! == handle else { return }
+//
+//                // pre V3
+//                // is it In Use?
+//                if inUse {
+//
+//                    // YES, Finish the UDP initialization & set the API state
+//                    _api.updateState(to: .clientConnected(radio: radio))
+//
+//                } else {
+//                    // pre V3 API
+//                    if properties[2].key == "forced" {
+//                        // NO, Disconnected
+//                        _log("Radio, disconnect: forced = \(properties[2].value)", .info, #function, #file, #line)
+//
+//                        NC.post(.clientDidDisconnect, object: handle as Any?)
+//                    }
+//                }
+//            }
         }
     }
     /// Parse a Display status message
@@ -847,8 +847,9 @@ public final class Radio: ObservableObject {
         if let id = properties[0].key.streamId {
             
             // YES, is it a removal?
-            if radio.version.isNewApi && remainder.contains(Api.kRemoved) {
-                
+//            if radio.version.isNewApi && remainder.contains(Api.kRemoved) {
+            if remainder.contains(Api.kRemoved) {
+
                 // New Api removal, find the stream & remove it
                 if daxIqStreams[id] != nil          { DaxIqStream.parseStatus(self, properties, false)           ; return }
                 if daxMicAudioStreams[id] != nil    { DaxMicAudioStream.parseStatus(self, properties, false)     ; return }
@@ -858,20 +859,20 @@ public final class Radio: ObservableObject {
                 if remoteTxAudioStreams[id] != nil  { RemoteTxAudioStream.parseStatus(self, properties, false)   ; return }
                 return
                 
-            } else if radio.version.isOldApi && remainder.contains(Api.kNotInUse) {
-                
-                // Old Api removal, find the stream & remove it
-                if audioStreams[id] != nil          { AudioStream.parseStatus(self, properties, false)           ; return }
-                if txAudioStreams[id] != nil        { TxAudioStream.parseStatus(self, properties, false)         ; return }
-                if micAudioStreams[id] != nil       { MicAudioStream.parseStatus(self, properties, false)        ; return }
-                if iqStreams[id] != nil             { IqStream.parseStatus(self, properties, false)              ; return }
-                return
+//            } else if radio.version.isOldApi && remainder.contains(Api.kNotInUse) {
+//
+//                // Old Api removal, find the stream & remove it
+//                if audioStreams[id] != nil          { AudioStream.parseStatus(self, properties, false)           ; return }
+//                if txAudioStreams[id] != nil        { TxAudioStream.parseStatus(self, properties, false)         ; return }
+//                if micAudioStreams[id] != nil       { MicAudioStream.parseStatus(self, properties, false)        ; return }
+//                if iqStreams[id] != nil             { IqStream.parseStatus(self, properties, false)              ; return }
+//                return
                 
             } else {
                 // NOT a removal
                 
                 // What version of the Api?
-                if radio.version.isNewApi {
+//                if radio.version.isNewApi {
                     
                     // New Api, check for unknown Keys
                     guard let token = StreamTypeNew(rawValue: properties[1].value) else {
@@ -888,22 +889,22 @@ public final class Radio: ObservableObject {
                     case .remoteRx:   RemoteRxAudioStream.parseStatus(radio, properties)
                     case .remoteTx:   RemoteTxAudioStream.parseStatus(radio, properties)
                     }
-                } else if radio.version.isOldApi {
-                    
-                    // Old Api, check for unknown Keys
-                    guard let token = StreamTypeOld(rawValue: properties[1].key) else {
-                        // log it and ignore the Key
-                        _log("Radio, unknown Stream type: \(properties[1].key)", .warning, #function, #file, #line)
-                        return
-                    }
-                    switch token {
-                    
-                    case .audio:      break   // handled by audioStream
-                    case .iq:         IqStream.parseStatus(radio, properties)
-                    case .micAudio:   break   // handled by micAudioStream
-                    case .txAudio:    break   // handled by txAudioStream
-                    }
-                }
+//                } else if radio.version.isOldApi {
+//
+//                    // Old Api, check for unknown Keys
+//                    guard let token = StreamTypeOld(rawValue: properties[1].key) else {
+//                        // log it and ignore the Key
+//                        _log("Radio, unknown Stream type: \(properties[1].key)", .warning, #function, #file, #line)
+//                        return
+//                    }
+//                    switch token {
+//
+//                    case .audio:      break   // handled by audioStream
+//                    case .iq:         IqStream.parseStatus(radio, properties)
+//                    case .micAudio:   break   // handled by micAudioStream
+//                    case .txAudio:    break   // handled by txAudioStream
+//                    }
+//                }
             }
         }
     }
@@ -1403,35 +1404,39 @@ extension Radio: ApiDelegate {
             if let object = waterfalls[vitaPacket.streamId]           { object.vitaProcessor(vitaPacket) }
             
         // ----- New API versions -----
-        case .daxAudio where version.isNewApi:
+//        case .daxAudio where version.isNewApi:
+        case .daxAudio:
             if let object = daxRxAudioStreams[vitaPacket.streamId]    { object.vitaProcessor(vitaPacket)}
             if let object = daxMicAudioStreams[vitaPacket.streamId]   { object.vitaProcessor(vitaPacket) }
             if let object = remoteRxAudioStreams[vitaPacket.streamId] { object.vitaProcessor(vitaPacket) }
             
-        case .daxReducedBw where version.isNewApi:
+//        case .daxReducedBw where version.isNewApi:
+        case .daxReducedBw:
             if let object = daxRxAudioStreams[vitaPacket.streamId]    { object.vitaProcessor(vitaPacket) }
             if let object = daxMicAudioStreams[vitaPacket.streamId]   { object.vitaProcessor(vitaPacket) }
             
-        case .opus where version.isNewApi:
+//        case .opus where version.isNewApi:
+        case .opus:
             if let object = remoteRxAudioStreams[vitaPacket.streamId] { object.vitaProcessor(vitaPacket) }
             
-        case .daxIq24 where version.isNewApi, .daxIq48 where version.isNewApi, .daxIq96 where version.isNewApi, .daxIq192 where version.isNewApi:
-            if let object = daxIqStreams[vitaPacket.streamId]         { object.vitaProcessor(vitaPacket) }
-            
-        // ----- Old API versions -----
-        case .daxAudio:
-            if let object = audioStreams[vitaPacket.streamId]         { object.vitaProcessor(vitaPacket) }
-            if let object = micAudioStreams[vitaPacket.streamId]      { object.vitaProcessor(vitaPacket) }
-            
-        case .daxReducedBw:
-            if let object = audioStreams[vitaPacket.streamId]         { object.vitaProcessor(vitaPacket) }
-            if let object = micAudioStreams[vitaPacket.streamId]      { object.vitaProcessor(vitaPacket) }
-            
+//        case .daxIq24 where version.isNewApi, .daxIq48 where version.isNewApi, .daxIq96 where version.isNewApi, .daxIq192 where version.isNewApi:
         case .daxIq24, .daxIq48, .daxIq96, .daxIq192:
             if let object = daxIqStreams[vitaPacket.streamId]         { object.vitaProcessor(vitaPacket) }
             
-        case .opus:
-            if let object = opusAudioStreams[vitaPacket.streamId]     { object.vitaProcessor(vitaPacket) }
+        // ----- Old API versions -----
+//        case .daxAudio:
+//            if let object = audioStreams[vitaPacket.streamId]         { object.vitaProcessor(vitaPacket) }
+//            if let object = micAudioStreams[vitaPacket.streamId]      { object.vitaProcessor(vitaPacket) }
+//
+//        case .daxReducedBw:
+//            if let object = audioStreams[vitaPacket.streamId]         { object.vitaProcessor(vitaPacket) }
+//            if let object = micAudioStreams[vitaPacket.streamId]      { object.vitaProcessor(vitaPacket) }
+//
+//        case .daxIq24, .daxIq48, .daxIq96, .daxIq192:
+//            if let object = daxIqStreams[vitaPacket.streamId]         { object.vitaProcessor(vitaPacket) }
+//
+//        case .opus:
+//            if let object = opusAudioStreams[vitaPacket.streamId]     { object.vitaProcessor(vitaPacket) }
             
         default:
             // log the error

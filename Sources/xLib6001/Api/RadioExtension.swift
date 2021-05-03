@@ -29,30 +29,30 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - AudioStream methods
     
-    /// Create an Audio Stream
-    ///
-    /// - Parameters:
-    ///   - channel:            DAX channel number
-    ///   - callback:           ReplyHandler (optional)
-    /// - Returns:              Success / Failure
-    ///
-    public func requestAudioStream(_ channel: String, callback: ReplyHandler? = nil) {
-        // tell the Radio to create a Stream
-        _api.send("stream create " + "dax" + "=\(channel)", replyTo: callback)
-    }
-    /// Find an AudioStream by DAX Channel
-    ///
-    /// - Parameter channel:    Dax channel number
-    /// - Returns:              an AudioStream (if any)
-    ///
-    public func findAudioStream(with channel: Int) -> AudioStream? {
-        // find the AudioStream with the specified Channel (if any)
-        let streams = audioStreams.values.filter { $0.daxChannel == channel }
-        guard streams.count >= 1 else { return nil }
-        
-        // return the first one
-        return streams[0]
-    }
+//    /// Create an Audio Stream
+//    ///
+//    /// - Parameters:
+//    ///   - channel:            DAX channel number
+//    ///   - callback:           ReplyHandler (optional)
+//    /// - Returns:              Success / Failure
+//    ///
+//    public func requestAudioStream(_ channel: String, callback: ReplyHandler? = nil) {
+//        // tell the Radio to create a Stream
+//        _api.send("stream create " + "dax" + "=\(channel)", replyTo: callback)
+//    }
+//    /// Find an AudioStream by DAX Channel
+//    ///
+//    /// - Parameter channel:    Dax channel number
+//    /// - Returns:              an AudioStream (if any)
+//    ///
+//    public func findAudioStream(with channel: Int) -> AudioStream? {
+//        // find the AudioStream with the specified Channel (if any)
+//        let streams = audioStreams.values.filter { $0.daxChannel == channel }
+//        guard streams.count >= 1 else { return nil }
+//        
+//        // return the first one
+//        return streams[0]
+//    }
     
     // ----------------------------------------------------------------------------
     // MARK: - BandSetting methods
@@ -213,40 +213,40 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - IQ Stream methods
     
-    /// Create an IQ Stream
-    ///
-    /// - Parameters:
-    ///   - channel:            DAX channel number
-    ///   - callback:           ReplyHandler (optional)
-    ///
-    public func requestIqStream(_ channel: String, callback: ReplyHandler? = nil) {
-        _api.send("stream create " + "daxiq" + "=\(channel)", replyTo: callback)
-    }
-    /// Create an IQ Stream
-    ///
-    /// - Parameters:
-    ///   - channel:            DAX channel number
-    ///   - ip:                 ip address
-    ///   - port:               port number
-    ///   - callback:           ReplyHandler (optional)
-    ///
-    public func requestIqStream(_ channel: String, ip: String, port: Int, callback: ReplyHandler? = nil) {
-        _api.send("stream create " + "daxiq" + "=\(channel) " + "ip" + "=\(ip) " + "port" + "=\(port)", replyTo: callback)
-    }
-    /// Find the IQ Stream for a DaxIqChannel
-    ///
-    /// - Parameters:
-    ///   - daxIqChannel:   a Dax IQ channel number
-    /// - Returns:          an IQ Stream reference (or nil)
-    ///
-    public func findIqStream(using channel: Int) -> IqStream? {
-        // find the IQ Streams with the specified Channel (if any)
-        let selectedStreams = iqStreams.values.filter { $0.daxIqChannel == channel }
-        guard selectedStreams.count >= 1 else { return nil }
-        
-        // return the first one
-        return selectedStreams[0]
-    }
+//    /// Create an IQ Stream
+//    ///
+//    /// - Parameters:
+//    ///   - channel:            DAX channel number
+//    ///   - callback:           ReplyHandler (optional)
+//    ///
+//    public func requestIqStream(_ channel: String, callback: ReplyHandler? = nil) {
+//        _api.send("stream create " + "daxiq" + "=\(channel)", replyTo: callback)
+//    }
+//    /// Create an IQ Stream
+//    ///
+//    /// - Parameters:
+//    ///   - channel:            DAX channel number
+//    ///   - ip:                 ip address
+//    ///   - port:               port number
+//    ///   - callback:           ReplyHandler (optional)
+//    ///
+//    public func requestIqStream(_ channel: String, ip: String, port: Int, callback: ReplyHandler? = nil) {
+//        _api.send("stream create " + "daxiq" + "=\(channel) " + "ip" + "=\(ip) " + "port" + "=\(port)", replyTo: callback)
+//    }
+//    /// Find the IQ Stream for a DaxIqChannel
+//    ///
+//    /// - Parameters:
+//    ///   - daxIqChannel:   a Dax IQ channel number
+//    /// - Returns:          an IQ Stream reference (or nil)
+//    ///
+//    public func findIqStream(using channel: Int) -> IqStream? {
+//        // find the IQ Streams with the specified Channel (if any)
+//        let selectedStreams = iqStreams.values.filter { $0.daxIqChannel == channel }
+//        guard selectedStreams.count >= 1 else { return nil }
+//        
+//        // return the first one
+//        return selectedStreams[0]
+//    }
     
     // ----------------------------------------------------------------------------
     // MARK: - Meter methods
@@ -404,7 +404,8 @@ extension Radio {
         _api.send("sub usb_cable all")
         _api.send("sub tnf all")
         
-        if version.isNewApi { _api.send("sub client all") }
+//        if version.isNewApi { _api.send("sub client all") }
+        _api.send("sub client all")
         //      send("sub spot all")    // TODO:
     }
     /// Request MTU limit

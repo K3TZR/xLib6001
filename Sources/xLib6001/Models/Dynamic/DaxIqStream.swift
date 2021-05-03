@@ -220,8 +220,69 @@ extension DaxIqStream: DynamicModelWithStream {
             _rxSequenceNumber = (_rxSequenceNumber + 1) % 16
 
             // Pass the data frame to the Opus delegate
-            delegate?.streamHandler( IqStreamFrame(payload: vita.payloadData, numberOfBytes: vita.payloadSize, daxIqChannel: channel ))
+            delegate?.streamHandler( DaxIqStreamFrame(payload: vita.payloadData, numberOfBytes: vita.payloadSize, daxIqChannel: channel ))
         }
     }
 }
+
+
+/// Struct containing IQ Stream data
+///
+///   populated by the IQ Stream vitaHandler
+///
+public struct DaxIqStreamFrame {
+
+    // ----------------------------------------------------------------------------
+    // MARK: - Public properties
+
+    public var daxIqChannel                   = -1
+    public private(set) var numberOfSamples   = 0
+    public var realSamples                    = [Float]()
+    public var imagSamples                    = [Float]()
+
+    // ----------------------------------------------------------------------------
+    // MARK: - Private properties
+
+    private var _kOneOverZeroDBfs  : Float = 1.0 / pow(2.0, 15.0)
+
+    // ----------------------------------------------------------------------------
+    // MARK: - Initialization
+
+    /// Initialize an IqStreamFrame
+    ///
+    /// - Parameters:
+    ///   - payload:        pointer to a Vita packet payload
+    ///   - numberOfBytes:  number of bytes in the payload
+    ///
+    public init(payload: [UInt8], numberOfBytes: Int, daxIqChannel: Int) {
+
+        // 4 byte each for left and right sample (4 * 2)
+        numberOfSamples = numberOfBytes / (4 * 2)
+        self.daxIqChannel = daxIqChannel
+
+        // allocate the samples arrays
+        realSamples = [Float](repeating: 0, count: numberOfSamples)
+        imagSamples = [Float](repeating: 0, count: numberOfSamples)
+
+        payload.withUnsafeBytes { (payloadPtr) in
+            // get a pointer to the data in the payload
+            let wordsPtr = payloadPtr.bindMemory(to: Float32.self)
+
+            // allocate temporary data arrays
+            var dataLeft = [Float32](repeating: 0, count: numberOfSamples)
+            var dataRight = [Float32](repeating: 0, count: numberOfSamples)
+
+            // FIXME: is there a better way
+            // de-interleave the data
+            for i in 0..<numberOfSamples {
+                dataLeft[i] = wordsPtr[2*i]
+                dataRight[i] = wordsPtr[(2*i) + 1]
+            }
+            // copy & normalize the data
+            vDSP_vsmul(&dataLeft, 1, &_kOneOverZeroDBfs, &realSamples, 1, vDSP_Length(numberOfSamples))
+            vDSP_vsmul(&dataRight, 1, &_kOneOverZeroDBfs, &imagSamples, 1, vDSP_Length(numberOfSamples))
+        }
+    }
+}
+
 

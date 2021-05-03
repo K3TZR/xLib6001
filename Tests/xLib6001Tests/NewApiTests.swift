@@ -21,7 +21,7 @@ final class NewApiTests: XCTestCase {
       
         Swift.print("***** Radio found: \(discovery.radios[0].packet.nickname) (v\(discovery.radios[0].packet.firmwareVersion)) @ \(discovery.radios[0].packet.publicIp)")
       
-        _ = Api.sharedInstance.connect(index: 0, program: "v3Tests", isGui: connectAsGui, logState: logState)
+        _ = Api.sharedInstance.connect( Api.ConnectionParams(index: 0, program: "v3Tests", isGui: connectAsGui, logState: logState))
         sleep(2)
         Swift.print("***** Connected")
         return Api.sharedInstance.activeRadio
@@ -52,7 +52,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       sleep(2)
       
@@ -91,9 +91,9 @@ final class NewApiTests: XCTestCase {
       } else {
         XCTFail("----->>>>> \(type) object NOT created <<<<<-----", file: #function)
       }
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -108,7 +108,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       // remove (if present)
       radio!.bandSettings["2".objectId!] = nil
@@ -143,9 +143,9 @@ final class NewApiTests: XCTestCase {
       }else {
         XCTFail("----->>>>> \(type) object NOT created <<<<<-----", file: #function)
       }
-    }  else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    }  else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -175,7 +175,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: ["BandSetting.swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       sleep(2)
       
@@ -300,9 +300,9 @@ final class NewApiTests: XCTestCase {
       
       if showInfoMessages { Swift.print("***** Previous \(type)s restored\n") }
       
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -321,7 +321,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       daxIqStreamStatus += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())"
       
@@ -377,9 +377,9 @@ final class NewApiTests: XCTestCase {
       } else {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -394,7 +394,7 @@ final class NewApiTests: XCTestCase {
 //    let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       if radio!.daxIqStreams.count > 0 {
         existingObjects = true
@@ -493,9 +493,9 @@ final class NewApiTests: XCTestCase {
       } else {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -514,7 +514,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       daxMicAudioStreamStatus += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())"
       
@@ -559,9 +559,9 @@ final class NewApiTests: XCTestCase {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
       
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -575,7 +575,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       if radio!.daxMicAudioStreams.count > 0 {
         existingObjects = true
@@ -664,9 +664,9 @@ final class NewApiTests: XCTestCase {
       } else {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -685,7 +685,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       daxRxAudioStreamStatus += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())"
       
@@ -735,9 +735,9 @@ final class NewApiTests: XCTestCase {
       } else {
         XCTFail("----->>>>> \(type) object removal FAILED <<<<<-----", file: #function)
       }
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -750,7 +750,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       if radio!.daxRxAudioStreams.count > 0 {
         existingObjects = true
@@ -844,9 +844,9 @@ final class NewApiTests: XCTestCase {
       } else {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -865,7 +865,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       daxTxAudioStreamStatus += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())"
       
@@ -909,9 +909,9 @@ final class NewApiTests: XCTestCase {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
       
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -924,7 +924,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       if radio!.daxTxAudioStreams.count > 0 {
         existingObjects = true
@@ -1016,9 +1016,9 @@ final class NewApiTests: XCTestCase {
       } else {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     // disconnect the radio
     disconnect()
   }
@@ -1037,7 +1037,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       remoteRxAudioStreamStatus += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())"
       
@@ -1086,9 +1086,9 @@ final class NewApiTests: XCTestCase {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
       
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -1101,7 +1101,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       if radio!.remoteRxAudioStreams.count > 0 {
         existingObjects = true
@@ -1190,9 +1190,9 @@ final class NewApiTests: XCTestCase {
       } else {
         XCTFail("----->>>>> Previous \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -1211,7 +1211,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       remoteTxAudioStreamStatus_1 += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())"
       
@@ -1260,9 +1260,9 @@ final class NewApiTests: XCTestCase {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
       
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -1276,7 +1276,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       remoteTxAudioStreamStatus_2 += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())"
       
@@ -1325,9 +1325,9 @@ final class NewApiTests: XCTestCase {
         XCTFail("----->>>>> Existing \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
       
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
   
@@ -1340,7 +1340,7 @@ final class NewApiTests: XCTestCase {
     let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
     guard radio != nil else { return }
     
-    if radio!.version.isNewApi {
+//    if radio!.version.isNewApi {
       
       if radio!.remoteTxAudioStreams.count > 0 {
         existingObjects = true
@@ -1424,9 +1424,9 @@ final class NewApiTests: XCTestCase {
       } else {
         XCTFail("----->>>>> Previous \(type) object(s) removal FAILED <<<<<-----", file: #function)
       }
-    } else {
-      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
-    }
+//    } else {
+//      XCTFail("----->>>>> \(#function) skipped, requires \(requiredVersion) <<<<<-----", file: #function)
+//    }
     disconnect()
   }
 }

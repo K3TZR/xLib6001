@@ -19,7 +19,7 @@ final class ObjectTests: XCTestCase {
 
             Swift.print("***** Radio found: \(discovery.radios[0].packet.nickname) (v\(discovery.radios[0].packet.firmwareVersion)) @ \(discovery.radios[0].packet.publicIp)")
 
-            _ = Api.sharedInstance.connect(index: 0, program: "ObjectTests", isGui: connectAsGui, logState: logState)
+            _ = Api.sharedInstance.connect( Api.ConnectionParams(index: 0, program: "ObjectTests", isGui: connectAsGui, logState: logState))
             sleep(2)
             if showInfoMessages { Swift.print("***** Connected") }
             return Api.sharedInstance.activeRadio
@@ -739,7 +739,8 @@ final class ObjectTests: XCTestCase {
 
                         let firstId = object.id
 
-                        if radio!.version.isNewApi { clientHandle = object.clientHandle }
+//                        if radio!.version.isNewApi { clientHandle = object.clientHandle }
+                        clientHandle = object.clientHandle
                         let wnbLevel = object.wnbLevel
                         let bandZoomEnabled = object.bandZoomEnabled
                         let segmentZoomEnabled = object.segmentZoomEnabled
@@ -786,7 +787,8 @@ final class ObjectTests: XCTestCase {
 
                                 if let object = radio!.panadapters.first?.value {
 
-                                    if radio!.version.isNewApi { XCTAssertEqual(object.clientHandle, clientHandle, "clientHandle", file: #function) }
+//                                    if radio!.version.isNewApi { XCTAssertEqual(object.clientHandle, clientHandle, "clientHandle", file: #function) }
+                                    XCTAssertEqual(object.clientHandle, clientHandle, "clientHandle", file: #function)
 
                                     XCTAssertEqual(object.wnbLevel, wnbLevel, "wnbLevel", file: #function)
                                     XCTAssertEqual(object.bandZoomEnabled, bandZoomEnabled, "bandZoomEnabled", file: #function)
@@ -837,7 +839,8 @@ final class ObjectTests: XCTestCase {
 
                                     if showInfoMessages { Swift.print("***** 2nd \(type) parameters modified") }
 
-                                    if radio!.version.isNewApi { XCTAssertEqual(object.clientHandle, clientHandle, "clientHandle", file: #function) }
+//                                    if radio!.version.isNewApi { XCTAssertEqual(object.clientHandle, clientHandle, "clientHandle", file: #function) }
+                                    XCTAssertEqual(object.clientHandle, clientHandle, "clientHandle", file: #function)
                                     XCTAssertEqual(object.wnbLevel, wnbLevel + 1, "wnbLevel", file: #function)
                                     XCTAssertEqual(object.bandZoomEnabled, !bandZoomEnabled, "bandZoomEnabled", file: #function)
                                     XCTAssertEqual(object.segmentZoomEnabled, !segmentZoomEnabled, "segmentZoomEnabled", file: #function)
@@ -910,8 +913,8 @@ final class ObjectTests: XCTestCase {
         let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
         guard radio != nil else { return }
 
-        if radio!.version.isNewApi { sliceStatus += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())" }
-
+//        if radio!.version.isNewApi { sliceStatus += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())" }
+        sliceStatus += " client_handle=\(Api.sharedInstance.connectionHandle!.toHex())"
         let id = sliceStatus.keyValuesArray()[0].key.objectId!
 
         if showInfoMessages { Swift.print("\n***** \(type) requested") }
@@ -926,7 +929,8 @@ final class ObjectTests: XCTestCase {
 
                 if showInfoMessages { Swift.print("***** \(type) added\n") }
 
-                if radio!.version.isNewApi { XCTAssertEqual(object.clientHandle, Api.sharedInstance.connectionHandle, "clientHandle", file: #function) }
+//                if radio!.version.isNewApi { XCTAssertEqual(object.clientHandle, Api.sharedInstance.connectionHandle, "clientHandle", file: #function) }
+                XCTAssertEqual(object.clientHandle, Api.sharedInstance.connectionHandle, "clientHandle", file: #function)
                 XCTAssertEqual(object.mode, "USB", "mode", file: #function)
                 XCTAssertEqual(object.filterLow, 100, "filterLow", file: #function)
                 XCTAssertEqual(object.filterHigh, 2_800, "filterHigh", file: #function)
@@ -1169,7 +1173,8 @@ final class ObjectTests: XCTestCase {
 
                   XCTAssertEqual(object.rttyShift, rttyShift, "RttyShift", file: #function)
                   XCTAssertEqual(object.rxAntList, rxAntList, "RxAntList", file: #function)
-                  if radio!.version.isNewApi { XCTAssertEqual(object.sliceLetter, sliceLetter, "SliceLetter", file: #function) }
+//                  if radio!.version.isNewApi { XCTAssertEqual(object.sliceLetter, sliceLetter, "SliceLetter", file: #function) }
+                  XCTAssertEqual(object.sliceLetter, sliceLetter, "SliceLetter", file: #function)
                   XCTAssertEqual(object.step, step, "Step", file: #function)
                   XCTAssertEqual(object.squelchEnabled, squelchEnabled, "SquelchEnabled", file: #function)
 
@@ -1530,21 +1535,21 @@ final class ObjectTests: XCTestCase {
         let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
         guard radio != nil else { return }
 
-        if radio!.version.isOldApi {
-
-            radio!.transmit.parseProperties(transmitProperties_1.keyValuesArray())
-
-            if showInfoMessages { Swift.print("\n***** \(type) object found") }
-
-            XCTAssertEqual(radio!.transmit.txRfPowerChanges, true, "txRfPowerChanges", file: #function)
-            XCTAssertEqual(radio!.transmit.tune, false, "tune", file: #function)
-            XCTAssertEqual(radio!.transmit.txInWaterfallEnabled, false, "txInWaterfallEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.txMonitorAvailable, true, "txMonitorAvailable", file: #function)
-            XCTAssertEqual(radio!.transmit.maxPowerLevel, 100, "maxPowerLevel", file: #function)
-
-            if showInfoMessages { Swift.print("***** \(type) object parameters verified\n") }
-
-        } else if radio!.version.isNewApi {
+//        if radio!.version.isOldApi {
+//
+//            radio!.transmit.parseProperties(transmitProperties_1.keyValuesArray())
+//
+//            if showInfoMessages { Swift.print("\n***** \(type) object found") }
+//
+//            XCTAssertEqual(radio!.transmit.txRfPowerChanges, true, "txRfPowerChanges", file: #function)
+//            XCTAssertEqual(radio!.transmit.tune, false, "tune", file: #function)
+//            XCTAssertEqual(radio!.transmit.txInWaterfallEnabled, false, "txInWaterfallEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.txMonitorAvailable, true, "txMonitorAvailable", file: #function)
+//            XCTAssertEqual(radio!.transmit.maxPowerLevel, 100, "maxPowerLevel", file: #function)
+//
+//            if showInfoMessages { Swift.print("***** \(type) object parameters verified\n") }
+//
+//        } else if radio!.version.isNewApi {
 
             // give the parseStatus method the values (they will be updated on the main thread)
             radio!.transmit.parseProperties(transmitProperties_1.keyValuesArray())
@@ -1563,7 +1568,7 @@ final class ObjectTests: XCTestCase {
 
             }
             disconnect()
-        }
+//        }
     }
 
     private let transmitProperties_2 = "am_carrier_level=35 compander=1 compander_level=50 break_in_delay=10 break_in=0"
@@ -1575,21 +1580,21 @@ final class ObjectTests: XCTestCase {
         let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
         guard radio != nil else { return }
 
-        if radio!.version.isOldApi {
-
-            radio!.transmit.parseProperties(transmitProperties_2.keyValuesArray())
-
-            if showInfoMessages { Swift.print("\n***** \(type) object found") }
-
-            XCTAssertEqual(radio!.transmit.carrierLevel, 35, "carrierLevel", file: #function)
-            XCTAssertEqual(radio!.transmit.companderEnabled, true, "companderEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.companderLevel, 50, "companderLevel", file: #function)
-            XCTAssertEqual(radio!.transmit.cwBreakInDelay, 10, "cwBreakInDelay", file: #function)
-            XCTAssertEqual(radio!.transmit.cwBreakInEnabled, false, "cwBreakInEnabled", file: #function)
-
-            if showInfoMessages { Swift.print("***** \(type) object parameters verified\n") }
-
-        } else if radio!.version.isNewApi {
+//        if radio!.version.isOldApi {
+//
+//            radio!.transmit.parseProperties(transmitProperties_2.keyValuesArray())
+//
+//            if showInfoMessages { Swift.print("\n***** \(type) object found") }
+//
+//            XCTAssertEqual(radio!.transmit.carrierLevel, 35, "carrierLevel", file: #function)
+//            XCTAssertEqual(radio!.transmit.companderEnabled, true, "companderEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.companderLevel, 50, "companderLevel", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwBreakInDelay, 10, "cwBreakInDelay", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwBreakInEnabled, false, "cwBreakInEnabled", file: #function)
+//
+//            if showInfoMessages { Swift.print("***** \(type) object parameters verified\n") }
+//
+//        } else if radio!.version.isNewApi {
 
             // give the parseStatus method the values (they will be updated on the main thread)
             radio!.transmit.parseProperties(transmitProperties_2.keyValuesArray())
@@ -1608,7 +1613,7 @@ final class ObjectTests: XCTestCase {
 
             }
             disconnect()
-        }
+//        }
     }
 
     private let transmitProperties_3 = "freq=14.100000 rfpower=100 tunepower=10 tx_slice_mode=USB hwalc_enabled=0 inhibit=0 dax=0 sb_monitor=0 mon_gain_sb=75 mon_pan_sb=50 met_in_rx=0 am_carrier_level=100 mic_selection=MIC mic_level=40 mic_boost=1 mic_bias=0 mic_acc=0 compander=1 compander_level=70 vox_enable=0 vox_level=50 vox_delay=72 speech_processor_enable=1 speech_processor_level=0 lo=100 hi=2900 tx_filter_changes_allowed=1 tx_antenna=ANT1 pitch=600 speed=30 iambic=1 iambic_mode=1 swap_paddles=0 break_in=1 break_in_delay=41 cwl_enabled=0 sidetone=1 mon_gain_cw=80 mon_pan_cw=50 synccwx=1"
@@ -1621,55 +1626,55 @@ final class ObjectTests: XCTestCase {
         let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
         guard radio != nil else { return }
 
-        if radio!.version.isV1 || radio!.version.isV2 {
-
-            radio!.transmit.parseProperties(transmitProperties_3.keyValuesArray())
-
-            if showInfoMessages { Swift.print("\n***** \(type) object found") }
-
-            XCTAssertEqual(radio!.transmit.carrierLevel, 100, "carrierLevel", file: #function)
-            XCTAssertEqual(radio!.transmit.companderEnabled, true, "companderEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.companderLevel, 70, "companderLevel", file: #function)
-            XCTAssertEqual(radio!.transmit.cwIambicEnabled, true, "cwIambicEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.cwIambicMode, 1, "cwIambicMode", file: #function)
-            XCTAssertEqual(radio!.transmit.cwPitch, 600, "cwPitch", file: #function)
-            XCTAssertEqual(radio!.transmit.cwSpeed, 30, "cwSpeed", file: #function)
-            XCTAssertEqual(radio!.transmit.cwSwapPaddles, false, "cwSwapPaddles", file: #function)
-            XCTAssertEqual(radio!.transmit.cwBreakInDelay, 41, "cwBreakInDelay", file: #function)
-            XCTAssertEqual(radio!.transmit.cwBreakInEnabled, true, "cwBreakInEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.cwlEnabled, false, "cwlEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.cwSidetoneEnabled, true, "cwSidetoneEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.cwSyncCwxEnabled, true, "cwSyncCwxEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.daxEnabled, false, "daxEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.frequency, 14_100_000, "frequency", file: #function)
-            XCTAssertEqual(radio!.transmit.hwAlcEnabled, false, "hwAlcEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.inhibit, false, "inhibit", file: #function)
-            XCTAssertEqual(radio!.transmit.metInRxEnabled, false, "metInRxEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.micAccEnabled, false, "micAccEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.micBiasEnabled, false, "micBiasEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.micBoostEnabled, true, "micBoostEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.micLevel, 40, "micLevel", file: #function)
-            XCTAssertEqual(radio!.transmit.micSelection, "MIC", "micSelection", file: #function)
-            XCTAssertEqual(radio!.transmit.rfPower, 100, "rfPower", file: #function)
-            XCTAssertEqual(radio!.transmit.speechProcessorEnabled, true, "speechProcessorEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.speechProcessorLevel, 0, "speechProcessorLevel", file: #function)
-            XCTAssertEqual(radio!.transmit.tunePower, 10, "tunePower", file: #function)
-            XCTAssertEqual(radio!.transmit.txAntenna, "ANT1", "txAntenna", file: #function)
-            XCTAssertEqual(radio!.transmit.txFilterChanges, true, "txFilterChanges", file: #function)
-            XCTAssertEqual(radio!.transmit.txFilterHigh, 2_900, "txFilterHigh", file: #function)
-            XCTAssertEqual(radio!.transmit.txFilterLow, 100, "txFilterLow", file: #function)
-            XCTAssertEqual(radio!.transmit.txMonitorEnabled, false, "txMonitorEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.txMonitorGainCw, 80, "txMonitorGainCw", file: #function)
-            XCTAssertEqual(radio!.transmit.txMonitorGainSb, 75, "txMonitorGainSb", file: #function)
-            XCTAssertEqual(radio!.transmit.txMonitorPanCw, 50, "txMonitorPanCw", file: #function)
-            XCTAssertEqual(radio!.transmit.txSliceMode, "USB", "txSliceMode", file: #function)
-            XCTAssertEqual(radio!.transmit.voxDelay, 72, "voxDelay", file: #function)
-            XCTAssertEqual(radio!.transmit.voxEnabled, false, "voxEnabled", file: #function)
-            XCTAssertEqual(radio!.transmit.voxLevel, 50, "voxLevel", file: #function)
-
-            if showInfoMessages { Swift.print("***** \(type) object parameters verified\n") }
-
-        } else if radio!.version.isNewApi {
+//        if radio!.version.isV1 || radio!.version.isV2 {
+//
+//            radio!.transmit.parseProperties(transmitProperties_3.keyValuesArray())
+//
+//            if showInfoMessages { Swift.print("\n***** \(type) object found") }
+//
+//            XCTAssertEqual(radio!.transmit.carrierLevel, 100, "carrierLevel", file: #function)
+//            XCTAssertEqual(radio!.transmit.companderEnabled, true, "companderEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.companderLevel, 70, "companderLevel", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwIambicEnabled, true, "cwIambicEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwIambicMode, 1, "cwIambicMode", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwPitch, 600, "cwPitch", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwSpeed, 30, "cwSpeed", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwSwapPaddles, false, "cwSwapPaddles", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwBreakInDelay, 41, "cwBreakInDelay", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwBreakInEnabled, true, "cwBreakInEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwlEnabled, false, "cwlEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwSidetoneEnabled, true, "cwSidetoneEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.cwSyncCwxEnabled, true, "cwSyncCwxEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.daxEnabled, false, "daxEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.frequency, 14_100_000, "frequency", file: #function)
+//            XCTAssertEqual(radio!.transmit.hwAlcEnabled, false, "hwAlcEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.inhibit, false, "inhibit", file: #function)
+//            XCTAssertEqual(radio!.transmit.metInRxEnabled, false, "metInRxEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.micAccEnabled, false, "micAccEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.micBiasEnabled, false, "micBiasEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.micBoostEnabled, true, "micBoostEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.micLevel, 40, "micLevel", file: #function)
+//            XCTAssertEqual(radio!.transmit.micSelection, "MIC", "micSelection", file: #function)
+//            XCTAssertEqual(radio!.transmit.rfPower, 100, "rfPower", file: #function)
+//            XCTAssertEqual(radio!.transmit.speechProcessorEnabled, true, "speechProcessorEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.speechProcessorLevel, 0, "speechProcessorLevel", file: #function)
+//            XCTAssertEqual(radio!.transmit.tunePower, 10, "tunePower", file: #function)
+//            XCTAssertEqual(radio!.transmit.txAntenna, "ANT1", "txAntenna", file: #function)
+//            XCTAssertEqual(radio!.transmit.txFilterChanges, true, "txFilterChanges", file: #function)
+//            XCTAssertEqual(radio!.transmit.txFilterHigh, 2_900, "txFilterHigh", file: #function)
+//            XCTAssertEqual(radio!.transmit.txFilterLow, 100, "txFilterLow", file: #function)
+//            XCTAssertEqual(radio!.transmit.txMonitorEnabled, false, "txMonitorEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.txMonitorGainCw, 80, "txMonitorGainCw", file: #function)
+//            XCTAssertEqual(radio!.transmit.txMonitorGainSb, 75, "txMonitorGainSb", file: #function)
+//            XCTAssertEqual(radio!.transmit.txMonitorPanCw, 50, "txMonitorPanCw", file: #function)
+//            XCTAssertEqual(radio!.transmit.txSliceMode, "USB", "txSliceMode", file: #function)
+//            XCTAssertEqual(radio!.transmit.voxDelay, 72, "voxDelay", file: #function)
+//            XCTAssertEqual(radio!.transmit.voxEnabled, false, "voxEnabled", file: #function)
+//            XCTAssertEqual(radio!.transmit.voxLevel, 50, "voxLevel", file: #function)
+//
+//            if showInfoMessages { Swift.print("***** \(type) object parameters verified\n") }
+//
+//        } else if radio!.version.isNewApi {
 
             // give the parseStatus method the values (they will be updated on the main thread)
             radio!.transmit.parseProperties(transmitProperties_3.keyValuesArray())
@@ -1722,7 +1727,7 @@ final class ObjectTests: XCTestCase {
 
             }
             disconnect()
-        }
+//        }
     }
 
     // ------------------------------------------------------------------------------

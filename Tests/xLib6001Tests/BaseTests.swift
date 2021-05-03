@@ -75,8 +75,8 @@ final class BaseTests: XCTestCase {
       let amplifier = Amplifier("0x1234abcd".streamId!)
       XCTAssertNotNil(amplifier, "\n***** Failed to instantiate Amplifier *****\n", file: #function)
       
-      let audioStream = AudioStream("0x41000000".streamId!)
-      XCTAssertNotNil(audioStream, "\n***** Failed to instantiate AudioStream *****\n", file: #function)
+//      let audioStream = AudioStream("0x41000000".streamId!)
+//      XCTAssertNotNil(audioStream, "\n***** Failed to instantiate AudioStream *****\n", file: #function)
       
       let daxIqStream = DaxIqStream(1)
       XCTAssertNotNil(daxIqStream, "\n***** Failed to instantiate DaxIqStream *****\n", file: #function)
@@ -96,8 +96,8 @@ final class BaseTests: XCTestCase {
       let txEqualizer = Equalizer("txsc")
       XCTAssertNotNil(txEqualizer, "\n***** Failed to instantiate Tx Equalizer *****\n", file: #function)
       
-      let iqStream = IqStream(1)
-      XCTAssertNotNil(iqStream, "\n***** Failed to instantiate IqStream *****\n", file: #function)
+//      let iqStream = IqStream(1)
+//      XCTAssertNotNil(iqStream, "\n***** Failed to instantiate IqStream *****\n", file: #function)
       
       let memory = Memory("0".objectId!)
       XCTAssertNotNil(memory, "\n***** Failed to instantiate Memory *****\n", file: #function)
@@ -105,11 +105,11 @@ final class BaseTests: XCTestCase {
       let meter = Meter(1)
       XCTAssertNotNil(meter, "\n***** Failed to instantiate Meter *****\n", file: #function)
       
-      let micAudioStream = MicAudioStream("0x45000000".streamId!)
-      XCTAssertNotNil(micAudioStream, "\n***** Failed to instantiate MicAudioStream *****\n", file: #function)
+//      let micAudioStream = MicAudioStream("0x45000000".streamId!)
+//      XCTAssertNotNil(micAudioStream, "\n***** Failed to instantiate MicAudioStream *****\n", file: #function)
       
-      let opus = OpusAudioStream("0x46000000".streamId!)
-      XCTAssertNotNil(opus, "\n***** Failed to instantiate Opus *****\n", file: #function)
+//      let opus = OpusAudioStream("0x46000000".streamId!)
+//      XCTAssertNotNil(opus, "\n***** Failed to instantiate Opus *****\n", file: #function)
       
       let pan = Panadapter("0x40000000".streamId!)
       XCTAssertNotNil(pan, "\n***** Failed to instantiate Panadapter *****\n", file: #function)
@@ -135,8 +135,8 @@ final class BaseTests: XCTestCase {
       let tnf = Tnf(1)
       XCTAssertNotNil(tnf, "\n***** Failed to instantiate Tnf *****\n", file: #function)
       
-      let txAudioStream = TxAudioStream("0x49000000".streamId!)
-      XCTAssertNotNil(txAudioStream, "\n***** Failed to instantiate TxAudioStream *****\n", file: #function)
+//      let txAudioStream = TxAudioStream("0x49000000".streamId!)
+//      XCTAssertNotNil(txAudioStream, "\n***** Failed to instantiate TxAudioStream *****\n", file: #function)
       
       let usbCableBcd = UsbCable("abcd", cableType: .bcd)
       XCTAssertNotNil(usbCableBcd, "\n***** Failed to instantiate BCD UsbCable *****\n", file: #function)

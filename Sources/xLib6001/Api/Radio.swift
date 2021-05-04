@@ -456,6 +456,7 @@ public final class Radio: ObservableObject {
         
         equalizers.removeAll()
         memories.removeAll()
+        _metersAreStreaming = false
         meters.removeAll()
         replyHandlers.removeAll()
         usbCables.removeAll()
@@ -1263,17 +1264,16 @@ extension Radio: ApiDelegate {
     }
 
     /// Process received UDP Vita packets
-    ///   arrives on the udpReceiveQ, calls targets on the streamQ
+    ///   arrives on the udpReceiveQ
     ///
     /// - Parameter vitaPacket:       a Vita packet
     public func vitaParser(_ vitaPacket: Vita) {
-        // Pass the stream to the appropriate object (checking for existence of the object first)
+        // Pass the stream to the appropriate object
         switch (vitaPacket.classCode) {
         
-        // ----- ALL API Versions -----
         case .meter:
-            // Meter - unlike other streams, the Meter stream contains multiple Meters
-            //         and must be processed by a class method on the Meter object
+            // unlike other streams, the Meter stream contains multiple Meters
+            // and is processed by a class method on the Meter object
             Meter.vitaProcessor(vitaPacket, radio: self)
             if _metersAreStreaming == false {
                 _metersAreStreaming = true

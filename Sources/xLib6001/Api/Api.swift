@@ -297,12 +297,12 @@ public final class Api {
             // a UDP port has been bound, inform observers
             NC.post(.udpDidBind, object: nil)
 
-        case .clientConnected (let radio) where radio.packet.isWan:
-            _log("Api client connected (WAN)", .debug, #function, #file, #line)
-            // when connecting to a WAN radio, the public IP address of the connected
-            // client must be obtained from the radio.
-            // connectionCompletion is invoked when the reply is received
-            send("client ip", replyTo: clientIpReplyHandler)
+//        case .clientConnected (let radio) where radio.packet.isWan:
+//            _log("Api client connected (WAN)", .debug, #function, #file, #line)
+//            // when connecting to a WAN radio, the public IP address of the connected
+//            // client must be obtained from the radio.
+//            // connectionCompletion is invoked when the reply is received
+//            send("client ip", replyTo: clientIpReplyHandler)
 
         case .clientConnected (let radio):
             _log("Api client connected (LOCAL)", .debug, #function, #file, #line)
@@ -488,21 +488,20 @@ public final class Api {
     ///   - seqNum:                 the Command's sequence number
     ///   - responseValue:          the response contained in the Reply to the Command
     ///   - reply:                  the descriptive text contained in the Reply to the Command
-    private func clientIpReplyHandler(_ command: String, seqNum: UInt, responseValue: String, reply: String) {
-        if let radio = activeRadio {
-            // was an error code returned?
-            if responseValue == Api.kNoError {
-                // NO, the reply value is the IP address
-//                localIP = reply.isValidIP4() ? reply : "0.0.0.0"
-                connectionCompletion(to: radio)
-
-            } else {
-                // YES, use the ip of the local interface
-                _log("Api, client ip command returned an error: \(responseValue)", .error, #function, #file, #line)
-                fatalError("Api, client ip command returned an error: \(responseValue)")
-            }
-        }
-    }
+//    private func clientIpReplyHandler(_ command: String, seqNum: UInt, responseValue: String, reply: String) {
+//        if let radio = activeRadio {
+//            // was an error code returned?
+//            if responseValue == Api.kNoError {
+//                // NO, the reply value is the IP address
+//                connectionCompletion(to: radio)
+//
+//            } else {
+//                // YES, use the ip of the local interface
+//                _log("Api, client ip command returned an error: \(responseValue)", .error, #function, #file, #line)
+//                fatalError("Api, client ip command returned an error: \(responseValue)")
+//            }
+//        }
+//    }
 }
 
 // ----------------------------------------------------------------------------

@@ -188,6 +188,11 @@ extension DaxIqStream: DynamicModelWithStream {
     ///   - vita:       a Vita struct
     ///
     func vitaProcessor(_ vita: Vita) {
+        if isStreaming == false {
+            isStreaming = true
+            // log the start of the stream
+            _log("DaxIq Stream started: \(id.hex)", .info, #function, #file, #line)
+        }
         // is this the first packet?
         if _rxSequenceNumber == -1 {
             _rxSequenceNumber = vita.sequence

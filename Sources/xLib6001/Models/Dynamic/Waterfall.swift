@@ -224,6 +224,11 @@ extension Waterfall: DynamicModelWithStream {
     ///   - vita:       a Vita struct
     ///
     func vitaProcessor(_ vita: Vita) {
+        if isStreaming == false {
+            isStreaming = true
+            // log the start of the stream
+            _log("Waterfall Stream started: \(id.hex)", .info, #function, #file, #line)
+        }
         // convert the Vita struct and accumulate a WaterfallFrame
 //        if _waterfallframes[_frameNumber].accumulate(version: _api.radio.version, vita: vita, expectedFrame: &packetFrame) {
         if _waterfallframes[_frameNumber].accumulate(vita: vita, expectedFrame: &packetFrame) {

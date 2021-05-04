@@ -342,6 +342,13 @@ extension Panadapter: DynamicModelWithStream {
     ///   - vita:        a Vita struct
     ///
     func vitaProcessor(_ vita: Vita) {
+        if isStreaming == false {
+            isStreaming = true
+            // log the start of the stream
+            _log("Panadapter Stream started: \(id.hex)", .info, #function, #file, #line)
+        }
+
+
         // convert the Vita struct to a PanadapterFrame
 //        if _panadapterframes[_frameNumber].accumulate(version: _radio.version, vita: vita, expectedFrame: &packetFrame) {
         if _panadapterframes[_frameNumber].accumulate(vita: vita, expectedFrame: &packetFrame) {

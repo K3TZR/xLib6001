@@ -415,15 +415,6 @@ public struct Version {
     public var longString       : String  { "\(major).\(minor).\(patch) (\(build))" }
     public var string           : String  { "\(major).\(minor).\(patch)" }
     
-//    public var isV3             : Bool    { major >= 3 }
-//    public var isV2NewApi       : Bool    { major == 2 && minor >= 5 }
-//    public var isGreaterThanV22 : Bool    { major >= 2 && minor >= 2 }
-//    public var isV2             : Bool    { major == 2 && minor < 5 }
-//    public var isV1             : Bool    { major == 1 }
-//    
-//    public var isNewApi         : Bool    { isV3 || isV2NewApi }
-//    public var isOldApi         : Bool    { isV1 || isV2 }
-    
     static func ==(lhs: Version, rhs: Version) -> Bool { lhs.major == rhs.major && lhs.minor == rhs.minor && lhs.patch == rhs.patch }
     
     static func <(lhs: Version, rhs: Version) -> Bool {

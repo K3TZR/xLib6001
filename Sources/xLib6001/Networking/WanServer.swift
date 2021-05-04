@@ -58,25 +58,18 @@ public final class WanServer: NSObject, ObservableObject {
     static let socketQ  = DispatchQueue(label: Api.kName + ".WanServer.socketQ")
     
     // ----------------------------------------------------------------------------
-    // MARK: - Public properties
+    // MARK: - Published properties
     
     @Published public var isConnected: Bool = false
     @Published public var sslClientPublicIp: String = ""
     @Published public private(set) var smartLinkUserName: String?
     @Published public private(set) var smartLinkUserCall: String?
 
-    public weak var delegate: WanServerDelegate?
-    
     // ----------------------------------------------------------------------------
-    // MARK: - Internal properties
-    
-    //    var _isConnected : Bool {
-    //        get { Api.objectQ.sync { __isConnected } }
-    //        set { if newValue != _isConnected { willChangeValue(for: \.isConnected) ; Api.objectQ.sync(flags: .barrier) { __isConnected = newValue } ; didChangeValue(for: \.isConnected)}}}
-    //    var _sslClientPublicIp : String {
-    //        get { Api.objectQ.sync { __sslClientPublicIp } }
-    //        set { if newValue != _sslClientPublicIp { willChangeValue(for: \.sslClientPublicIp) ; Api.objectQ.sync(flags: .barrier) { __sslClientPublicIp = newValue } ; didChangeValue(for: \.sslClientPublicIp)}}}
-    
+    // MARK: - Public properties
+
+    public weak var delegate: WanServerDelegate?
+
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
     
@@ -101,6 +94,9 @@ public final class WanServer: NSObject, ObservableObject {
     private let kAppConnectTag      = 2
     private let kAppDisconnectTag   = 3
     private let kTestTag            = 4
+
+    // ----------------------------------------------------------------------------
+    // MARK: - Private types
 
     private enum MessageToken: String {
         case application
@@ -179,12 +175,12 @@ public final class WanServer: NSObject, ObservableObject {
         // try to connect
         do {
             try _tlsSocket.connect(toHost: kHostName, onPort: UInt16(kHostPort), withTimeout: _timeout)
-            _log("WanServer, connection successful", .debug, #function, #file, #line)
+            _log("WanServer, TLS connection successful", .debug, #function, #file, #line)
             NC.post(.smartLinkLogon, object: nil)
             return true
             
         } catch _ {
-            _log("WanServer, connection FAILED", .error, #function, #file, #line)
+            _log("WanServer, TLS connection FAILED", .error, #function, #file, #line)
             return false
         }
     }
@@ -407,17 +403,6 @@ public final class WanServer: NSObject, ObservableObject {
         var currentPacketList = [DiscoveryPacket]()
         
         for message in radioMessages where message != "" {
-
-//            var publicTlsPortToUse = -1
-//            var publicUdpPortToUse = -1
-//            var isPortForwardOn = false
-//            var publicTlsPort = -1
-//            var publicUdpPort = -1
-//            var publicUpnpTlsPort = -1
-//            var publicUpnpUdpPort = -1
-            
-//            let properties = message.keyValuesArray()
-
             if var packet = Vita.ParseDiscovery( message.keyValuesArray() ) {
                 // now continue to fill the radio parameters
                 // favor using the manually defined forwarded ports if they are defined
@@ -456,62 +441,6 @@ public final class WanServer: NSObject, ObservableObject {
             }
         }
     }
-
-//            }
-//            // process each key/value pair, <key=value>
-//            for property in properties {
-//                // Check for Unknown Keys
-//                guard let token = Discovery.Tokens(rawValue: property.key)  else {
-//                    // log it and ignore the Key
-//                    _log("WanServer, unknown radio list token: \(property.key)", .warning, #function, #file, #line)
-//                    continue
-//                }
-//
-//                // Known tokens, in alphabetical order
-//                switch token {
-//
-//                case .callsign:                   packet.callsign = property.value
-//                case .guiClientHandles:           packet.guiClientHandles = property.value
-//                case .guiClientHosts:             packet.guiClientHosts = property.value
-//                case .guiClientIps:               packet.guiClientIps = property.value
-//                case .guiClientPrograms:          packet.guiClientPrograms = property.value
-//                case .guiClientStations:          packet.guiClientStations = property.value
-//                case .inUseIpSMARTLINK:           packet.inUseIp = property.value
-//                case .inUseHostSMARTLINK:         packet.inUseHost = property.value
-//                case .lastSeen:
-//                    let dateFormatter = DateFormatter()
-//                    // date format is like: 2/6/2018_5:20:16_AM
-//                    dateFormatter.dateFormat = "M/d/yyy_H:mm:ss_a"
-//
-//                    guard let date = dateFormatter.date(from: property.value.lowercased()) else {
-//                        _log("WanServer, LastSeen date mismatched format: \(property.value)", .error, #function, #file, #line)
-//                        break
-//                    }
-//                    // use date constant here
-//                    packet.lastSeen = date
-//                case .maxLicensedVersion:         packet.maxLicensedVersion = property.value
-//                case .model:                      packet.model = property.value
-//                case .nicknameSMARTLINK:          packet.nickname = property.value
-//                case .publicIpSMARTLINK:          packet.publicIp = property.value
-//                case .publicTlsPort:              publicTlsPort = property.value.iValue
-//                case .publicUdpPort:              publicUdpPort = property.value.iValue
-//                case .publicUpnpTlsPort:          publicUpnpTlsPort = property.value.iValue
-//                case .publicUpnpUdpPort:          publicUpnpUdpPort = property.value.iValue
-//                case .requiresAdditionalLicense:  packet.requiresAdditionalLicense = property.value.bValue
-//                case .radioLicenseId:             packet.radioLicenseId = property.value
-//                case .serialNumber:               packet.serialNumber = property.value
-//                case .status:                     packet.status = property.value
-//                case .upnpSupported:              packet.upnpSupported = property.value.bValue
-//                case .firmwareVersion:            packet.firmwareVersion = property.value
-//
-//                // present to suppress log warning, should never occur
-//                case .discoveryVersion, .fpcMac, .publicIpLOCAL:          break
-//                case .inUseHostLOCAL,.inUseIpLOCAL, .nicknameLOCAL:       break
-//                case .licensedClients, .availableClients:                 break
-//                case .maxPanadapters, .availablePanadapters:              break
-//                case .maxSlices, .availableSlices, .port, .wanConnected:  break
-//                }
-//            }
 
     /// Parse a Test Connection result
     /// - Parameter properties:         a KeyValuesArray
@@ -565,7 +494,7 @@ public final class WanServer: NSObject, ObservableObject {
         // start the timer
         _pingTimer?.resume()
         
-        _log("WanServer, started pinging: \(_currentHost):\(_currentPort)", .debug, #function, #file, #line)
+        _log("WanServer, started pinging: Host=\(_currentHost) Port=\(_currentPort)", .debug, #function, #file, #line)
     }
     
     /// Stop pinging the server
@@ -574,7 +503,7 @@ public final class WanServer: NSObject, ObservableObject {
         _pingTimer?.cancel()
         _pingTimer = nil
         
-        _log("WanServer, stopped pinging: \(_currentHost):\(_currentPort) ", .debug, #function, #file, #line)
+        _log("WanServer, stopped pinging: Host=\(_currentHost) Port=\(_currentPort) ", .debug, #function, #file, #line)
     }
     
     /// Send a command to the server
@@ -602,7 +531,7 @@ extension WanServer: GCDAsyncSocketDelegate {
         _currentHost = sock.connectedHost ?? ""
         _currentPort = sock.connectedPort
         
-        _log("WanServer, connected: \(_currentHost):\(_currentPort) ", .debug, #function, #file, #line)
+        _log("WanServer, connected: Host=\(_currentHost) Port=\(_currentPort) ", .debug, #function, #file, #line)
         
         // initiate a secure (TLS) connection to the SmartLink server
         var tlsSettings = [String : NSObject]()
@@ -621,7 +550,7 @@ extension WanServer: GCDAsyncSocketDelegate {
         if _ping { startPinging() }
         
         // register the Application / token pair with the SmartLink server
-        sendTlsCommand("application register name=\(_appName) platform=\(_platform) token=\(_idToken!)", timeout: _timeout, tag: kRegisterTag)
+        sendTlsCommand("application register appName=\(_appName) platform=\(_platform) token=\(_idToken!)", timeout: _timeout, tag: kRegisterTag)
         
         // start reading
         readNext()
@@ -641,7 +570,7 @@ extension WanServer: GCDAsyncSocketDelegate {
     @objc public func socketDidDisconnect(_ sock: GCDAsyncSocket, withError err: Error?) {
         // Disconnected from the SmartLink server
         let error = (err == nil ? "" : " with error: " + err!.localizedDescription)
-        _log("WanServer, disconnected\(error): \(_currentHost):\(_currentPort)", .debug, #function, #file, #line)
+        _log("WanServer, disconnected\(error) from: Host=\(_currentHost) Port=\(_currentPort)", .debug, #function, #file, #line)
         
         DispatchQueue.main.async { self.isConnected = false }
         _currentHost = ""
@@ -649,12 +578,12 @@ extension WanServer: GCDAsyncSocketDelegate {
     }
     
     @objc public func socket(_ sock: GCDAsyncSocket, shouldTimeoutWriteWithTag tag: Int, elapsed: TimeInterval, bytesDone length: UInt) -> TimeInterval {
-        _log("WanServer, write timeout: \(_currentHost):\(_currentPort)", .warning, #function, #file, #line)
+        _log("WanServer, write timeout: Host=\(_currentHost) Port=\(_currentPort)", .warning, #function, #file, #line)
         return 0
     }
     
     @objc public func socket(_ sock: GCDAsyncSocket, shouldTimeoutReadWithTag tag: Int, elapsed: TimeInterval, bytesDone length: UInt) -> TimeInterval {
-        _log("WanServer, read timeout: \(_currentHost):\(_currentPort)", .warning, #function, #file, #line)
+        _log("WanServer, read timeout: Host=\(_currentHost) Port=\(_currentPort)", .warning, #function, #file, #line)
         return 30.0
     }
 }

@@ -506,6 +506,7 @@ public final class Api {
 }
 
 // ----------------------------------------------------------------------------
+// MARK: - TcpManagerDelegate extension
 
 extension Api: TcpManagerDelegate {
 
@@ -537,6 +538,7 @@ extension Api: TcpManagerDelegate {
 }
 
 // ----------------------------------------------------------------------------
+// MARK: - UdpManagerDelegate extension
 
 extension Api: UdpManagerDelegate {
 

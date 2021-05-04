@@ -175,12 +175,12 @@ public final class WanServer: NSObject, ObservableObject {
         // try to connect
         do {
             try _tlsSocket.connect(toHost: kHostName, onPort: UInt16(kHostPort), withTimeout: _timeout)
-            _log("WanServer, TLS connection successful", .debug, #function, #file, #line)
+            _log("WanServer, TLS connection successful: Host=\(kHostName) Port=\(kHostPort)", .debug, #function, #file, #line)
             NC.post(.smartLinkLogon, object: nil)
             return true
             
         } catch _ {
-            _log("WanServer, TLS connection FAILED", .error, #function, #file, #line)
+            _log("WanServer, TLS connection FAILED: Host=\(kHostName) Port=\(kHostPort)", .error, #function, #file, #line)
             return false
         }
     }
@@ -528,9 +528,11 @@ extension WanServer: GCDAsyncSocketDelegate {
     
     @objc public func socket(_ sock: GCDAsyncSocket, didConnectToHost host: String, port: UInt16) {
         // Connected to the SmartLink server, save the ip & port
-        _currentHost = sock.connectedHost ?? ""
-        _currentPort = sock.connectedPort
-        
+//        _currentHost = sock.connectedHost ?? ""
+//        _currentPort = sock.connectedPort
+        _currentHost = host
+        _currentPort = port
+
         _log("WanServer, connected: Host=\(_currentHost) Port=\(_currentPort) ", .debug, #function, #file, #line)
         
         // initiate a secure (TLS) connection to the SmartLink server

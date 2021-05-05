@@ -8,9 +8,6 @@
 
 import Foundation
 
-public typealias MeterId = ObjectId
-public typealias MeterName = String
-
 /// Meter Class implementation
 ///
 ///      creates a Meter instance to be used by a Client to support the
@@ -121,6 +118,9 @@ public final class Meter: ObservableObject, Identifiable {
 
     public init(_ id: MeterId) { self.id = id }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension Meter: DynamicModel {
     /// Parse a Meter status message

@@ -16,11 +16,7 @@ import Foundation
 ///
 public final class Cwx: ObservableObject {
     // ----------------------------------------------------------------------------
-    // MARK: - Public properties
-
-    public var charSentEventHandler: ((_ index: Int) -> Void)?
-    public var eraseSentEventHandler: ((_ start: Int, _ stop: Int) -> Void)?
-    public var messageQueuedEventHandler: ((_ sequence: Int, _ bufferIndex: Int) -> Void)?
+    // MARK: - Published properties
 
     @Published public var breakInDelay = 0 {
         didSet { if !_suppress && breakInDelay != oldValue { cwxCmd( "delay", breakInDelay) }}}
@@ -29,11 +25,21 @@ public final class Cwx: ObservableObject {
     @Published public var wpm = 0 {
         didSet { if !_suppress && wpm != oldValue { cwxCmd( .wpm, wpm) }}}
 
+    // ----------------------------------------------------------------------------
+    // MARK: - Public properties
+
+    public var charSentEventHandler: ((_ index: Int) -> Void)?
+    public var eraseSentEventHandler: ((_ start: Int, _ stop: Int) -> Void)?
+    public var messageQueuedEventHandler: ((_ sequence: Int, _ bufferIndex: Int) -> Void)?
+
     // ------------------------------------------------------------------------------
     // MARK: - Internal properties
 
     var macros: [String]
     let kMaxNumberOfMacros = 12
+
+    // ------------------------------------------------------------------------------
+    // MARK: - Internal types
 
     enum CwxTokens: String {
         case breakInDelay   = "break_in_delay"
@@ -231,6 +237,9 @@ public final class Cwx: ObservableObject {
         _api.send("cwx " + tokenString + " \(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - StaticModel extension
 
 extension Cwx: StaticModel {
     /// Parse Cwx key/value pairs, called by Radio

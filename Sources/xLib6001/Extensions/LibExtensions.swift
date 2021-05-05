@@ -11,11 +11,45 @@ import CoreGraphics
 
 typealias NC                    = NotificationCenter
 
-public typealias KeyValuesArray = [(key:String, value:String)]
-public typealias ValuesArray    = [String]
-public typealias StreamId       = UInt32
-public typealias Handle         = UInt32
-public typealias ObjectId       = UInt16
+public typealias AmplifierId        = Handle
+public typealias AntennaPort        = String
+public typealias BandId             = ObjectId
+public typealias CommandTuple = (command: String, diagnostic: Bool, replyHandler: ReplyHandler?)
+public typealias DaxIqStreamId      = StreamId
+public typealias DaxMicStreamId     = StreamId
+public typealias DaxRxStreamId      = StreamId
+public typealias DaxTxStreamId      = StreamId
+public typealias EqualizerId        = String
+public typealias FilterMode         = String
+public typealias GuiClientId        = String
+public typealias Handle             = UInt32
+public typealias Hz                 = Int
+public typealias IdToken            = String
+public typealias KeyValuesArray     = [(key:String, value:String)]
+public typealias MemoryId           = ObjectId
+public typealias MeterId            = ObjectId
+public typealias MeterName          = String
+public typealias MHz                = Double
+public typealias MicrophonePort     = String
+public typealias NetCwId            = StreamId
+public typealias ObjectId           = UInt16
+public typealias PanadapterStreamId = StreamId
+public typealias ProfileId          = String
+public typealias ProfileName        = String
+public typealias RemoteRxStreamId   = StreamId
+public typealias RemoteTxStreamId   = StreamId
+public typealias ReplyHandler       = (_ command: String, _ seqNumber: SequenceNumber, _ responseValue: String, _ reply: String) -> Void
+public typealias ReplyTuple         = (replyTo: ReplyHandler?, command: String)
+public typealias RfGainValue        = String
+public typealias SequenceNumber     = UInt
+public typealias SliceId            = ObjectId
+public typealias StreamId           = UInt32
+public typealias TnfId              = ObjectId
+public typealias UsbCableId         = String
+public typealias ValuesArray        = [String]
+public typealias WaterfallStreamId  = StreamId
+public typealias XvtrId             = ObjectId
+
 
 public let kControlMin = 0
 public let kControlMax = 100

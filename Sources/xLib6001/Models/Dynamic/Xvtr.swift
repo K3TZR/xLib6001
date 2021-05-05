@@ -6,8 +6,6 @@
 //  Copyright © 2017 Douglas Adams. All rights reserved.
 //
 
-public typealias XvtrId = ObjectId
-
 import Foundation
 
 /// Xvtr Class implementation
@@ -97,6 +95,9 @@ public final class Xvtr: ObservableObject, Identifiable {
         _api.send("xvtr set " + "\(id) " + token.rawValue + "=\(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension Xvtr: DynamicModel {
     /// Parse an Xvtr status message

@@ -9,10 +9,6 @@
 import Foundation
 import CocoaAsyncSocket
 
-public typealias SequenceNumber = UInt
-public typealias ReplyHandler = (_ command: String, _ seqNumber: SequenceNumber, _ responseValue: String, _ reply: String) -> Void
-public typealias ReplyTuple = (replyTo: ReplyHandler?, command: String)
-
 /// Delegate protocol for the TcpManager class
 protocol TcpManagerDelegate: AnyObject {
 
@@ -34,24 +30,28 @@ final class TcpManager: NSObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
 
-    internal var isConnected      : Bool { _tcpSocket.isConnected }
+    var isConnected: Bool { _tcpSocket.isConnected }
 
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
 
-    private weak var _delegate    : TcpManagerDelegate?
-
-    private var _tcpReceiveQ: DispatchQueue
-    private var _tcpSendQ: DispatchQueue
-    private var _tcpSocket: GCDAsyncSocket!
-    private var _timeout = 0.0   // seconds
-
+    private weak var _delegate: TcpManagerDelegate?
     private var _isWan: Bool {
         get { Api.objectQ.sync { __isWan } }
         set { Api.objectQ.sync(flags: .barrier) {__isWan = newValue }}}
     private var _seqNum: UInt {
         get { Api.objectQ.sync { __seqNum } }
         set { Api.objectQ.sync(flags: .barrier) {__seqNum = newValue }}}
+    private var _tcpReceiveQ: DispatchQueue
+    private var _tcpSendQ: DispatchQueue
+    private var _tcpSocket: GCDAsyncSocket!
+    private var _timeout = 0.0   // seconds
+
+    // ----------------------------------------------------------------------------
+    // *** Backing properties (DO NOT ACCESS) ***
+
+    private var __isWan = false
+    private var __seqNum: UInt = 0
 
     // ----------------------------------------------------------------------------
     // MARK: - Initialization
@@ -62,7 +62,6 @@ final class TcpManager: NSObject {
     ///   - tcpSendQ:       a serial Queue for Tcp send activity
     ///   - delegate:       a delegate for Tcp activity
     ///   - timeout:        connection timeout (seconds)
-    ///
     init(tcpReceiveQ: DispatchQueue, tcpSendQ: DispatchQueue, delegate: TcpManagerDelegate, timeout: Double = 0.5) {
         _tcpReceiveQ = tcpReceiveQ
         _tcpSendQ = tcpSendQ
@@ -82,9 +81,8 @@ final class TcpManager: NSObject {
 
     /// Attempt to connect to the Radio (hardware)
     /// - Parameters:
-    ///   - packet:                 a DiscoveryPacket instance
+    ///   - packet:                 a DiscoveryPacket
     /// - Returns:                  success / failure
-    ///
     func connect(_ packet: DiscoveryPacket) -> Bool {
         var portToUse = 0
         var localInterface: String?
@@ -117,21 +115,19 @@ final class TcpManager: NSObject {
             // connection attemp failed
             success = false
         }
-
         if success { _isWan = packet.isWan ; _seqNum = 0 }
-
         return success
     }
-    /// Disconnect from the Radio (hardware)
+    /// Disconnect TCP from the Radio (hardware)
     func disconnect() {
         _tcpSocket.disconnect()
     }
+
     /// Send a Command to the Radio (hardware)
     /// - Parameters:
     ///   - cmd:            a Command string
     ///   - diagnostic:     whether to add "D" suffix
     /// - Returns:          the Sequence Number of the Command
-    ///
     func send(_ cmd: String, diagnostic: Bool = false) -> UInt {
         var lastSeqNum : UInt = 0
         var command = ""
@@ -158,28 +154,22 @@ final class TcpManager: NSObject {
     func readNext() {
         _tcpSocket.readData(to: GCDAsyncSocket.lfData(), withTimeout: -1, tag: 0)
     }
-    
-    func secureTheConnection() {
-
-    }
-
-    // ----------------------------------------------------------------------------
-    // *** Backing properties (Do NOT use) ***
-
-    private var __isWan   = false
-    private var __seqNum  : UInt = 0
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - GCDAsyncSocketDelegate extension
 
 extension TcpManager: GCDAsyncSocketDelegate {
     // All execute on the tcpReceiveQ
 
-    @objc func socketDidDisconnect(_ sock: GCDAsyncSocket, withError err: Error?) {
+    func socketDidDisconnect(_ sock: GCDAsyncSocket, withError err: Error?) {
         _delegate?.didDisconnect(reason: (err == nil) ? "User Initiated" : err!.localizedDescription)
     }
 
-    @objc func socket(_ sock: GCDAsyncSocket, didConnectToHost host: String, port: UInt16) {
+    func socket(_ sock: GCDAsyncSocket, didConnectToHost host: String, port: UInt16) {
         // Connected
-        interfaceIpAddress = sock.localHost!
+//        interfaceIpAddress = sock.localHost!
+        interfaceIpAddress = host
 
         // is this a Wan connection?
         if _isWan {
@@ -190,11 +180,12 @@ extension TcpManager: GCDAsyncSocketDelegate {
 
         } else {
             // NO, we're connected
-            _delegate?.didConnect(host: sock.connectedHost ?? "", port: sock.connectedPort)
+//            _delegate?.didConnect(host: sock.connectedHost ?? "", port: sock.connectedPort)
+            _delegate?.didConnect(host: host, port: port)
         }
     }
 
-    @objc func socket(_ sock: GCDAsyncSocket, didRead data: Data, withTag tag: Int) {
+    func socket(_ sock: GCDAsyncSocket, didRead data: Data, withTag tag: Int) {
         // pass the bytes read to the delegate
         if let text = String(data: data, encoding: .ascii) {
             _delegate?.didReceive(text)
@@ -203,7 +194,7 @@ extension TcpManager: GCDAsyncSocketDelegate {
         readNext()
     }
 
-    @objc public func socketDidSecure(_ sock: GCDAsyncSocket) {
+    public func socketDidSecure(_ sock: GCDAsyncSocket) {
         // should not happen but...
         guard _isWan else { return }
 
@@ -211,7 +202,7 @@ extension TcpManager: GCDAsyncSocketDelegate {
         _delegate?.didConnect(host: sock.connectedHost ?? "", port: sock.connectedPort)
     }
 
-    @objc public func socket(_ sock: GCDAsyncSocket, didReceive trust: SecTrust, completionHandler: @escaping (Bool) -> Void) {
+    public func socket(_ sock: GCDAsyncSocket, didReceive trust: SecTrust, completionHandler: @escaping (Bool) -> Void) {
         // should not happen but...
         guard _isWan else { completionHandler(false) ; return }
 

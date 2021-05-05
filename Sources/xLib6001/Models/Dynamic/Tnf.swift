@@ -8,8 +8,6 @@
 
 import Foundation
 
-public typealias TnfId = ObjectId
-
 /// TNF Class implementation
 ///
 ///       creates a Tnf instance to be used by a Client to support the
@@ -41,7 +39,7 @@ public final class Tnf: ObservableObject, Identifiable {
         didSet { if !_suppress && width != oldValue { tnfCmd( .width, width.hzToMhz) }}}
     
     // ----------------------------------------------------------------------------
-    // MARK: - Public properties
+    // MARK: - Public types
     
     public enum Depth : UInt {
         case normal   = 1
@@ -50,7 +48,7 @@ public final class Tnf: ObservableObject, Identifiable {
     }
     
     // ----------------------------------------------------------------------------
-    // MARK: - Internal properties
+    // MARK: - Internal types
     
     enum TnfTokens : String {
         case depth
@@ -104,6 +102,9 @@ public final class Tnf: ObservableObject, Identifiable {
         _api.send("tnf set " + "\(id) " + token.rawValue + "=\(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension Tnf: DynamicModel {
     /// Parse a Tnf status message

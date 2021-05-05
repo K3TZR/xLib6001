@@ -6,8 +6,6 @@
 //  Copyright © 2017 Douglas Adams & Mario Illgen. All rights reserved.
 //
 
-public typealias DaxMicStreamId = StreamId
-
 import Foundation
 
 /// DaxMicAudioStream Class implementation
@@ -88,6 +86,9 @@ public final class DaxMicAudioStream: ObservableObject, Identifiable {
         NC.post(.daxMicAudioStreamWillBeRemoved, object: self as Any?)
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModelWithStream extension
 
 extension DaxMicAudioStream: DynamicModelWithStream {
     /// Parse a DAX Mic AudioStream status message

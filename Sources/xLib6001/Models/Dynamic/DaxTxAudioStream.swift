@@ -6,8 +6,6 @@
 //  Copyright © 2017 Douglas Adams & Mario Illgen. All rights reserved.
 //
 
-public typealias DaxTxStreamId = StreamId
-
 import Foundation
 
 /// DaxTxAudioStream Class implementation
@@ -187,6 +185,9 @@ public final class DaxTxAudioStream: ObservableObject, Identifiable {
         NC.post(.daxTxAudioStreamWillBeRemoved, object: self as Any?)
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension DaxTxAudioStream: DynamicModel {
     /// Parse a TxAudioStream status message

@@ -8,21 +8,12 @@
 import Foundation
 import CocoaAsyncSocket
 
-public typealias GuiClientId = String
-
 /// Discovery implementation
 ///
 ///      listens for the udp broadcasts announcing the presence of a Flex-6000
 ///      Radio, reports changes to the list of available radios
 ///
 public final class Discovery: NSObject {
-    // ----------------------------------------------------------------------------
-    // MARK: - Static properties
-    
-    // GCD Queues
-    static let udpQ = DispatchQueue(label: "Discovery" + ".udpQ")
-    static let timerQ = DispatchQueue(label: "Discovery" + ".timerQ")
-    
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
     
@@ -37,7 +28,17 @@ public final class Discovery: NSObject {
     private let _log = LogProxy.sharedInstance.libMessage
     private var _timeoutTimer: DispatchSourceTimer!
     private var _udpSocket: GCDAsyncUdpSocket?
-    
+
+    // GCD Queues
+    private let _timerQ = DispatchQueue(label: "Discovery" + ".timerQ")
+    private let _udpQ   = DispatchQueue(label: "Discovery" + ".udpQ")
+
+    // ----------------------------------------------------------------------------
+    // *** Backing properties (DO NOT ACCESS) ***
+
+    private var _discoveryPackets = [DiscoveryPacket]()
+    private var _radios = [Radio]()
+
     // ----------------------------------------------------------------------------
     // MARK: - Singleton
     
@@ -55,7 +56,7 @@ public final class Discovery: NSObject {
         super.init()
         
         // create a Udp socket
-        _udpSocket = GCDAsyncUdpSocket( delegate: self, delegateQueue: Discovery.udpQ )
+        _udpSocket = GCDAsyncUdpSocket( delegate: self, delegateQueue: _udpQ )
         
         // if created
         if let sock = _udpSocket {
@@ -85,7 +86,7 @@ public final class Discovery: NSObject {
                 try sock.beginReceiving()
                 
                 // create the timer's dispatch source
-                _timeoutTimer = DispatchSource.makeTimerSource(queue: Discovery.timerQ)
+                _timeoutTimer = DispatchSource.makeTimerSource(queue: _timerQ)
                 
                 // Set timer
                 _timeoutTimer.schedule(deadline: DispatchTime.now(), repeating: checkInterval, leeway: .milliseconds(250))
@@ -199,7 +200,7 @@ public final class Discovery: NSObject {
     /// Parse the csv fields in a Discovery packet
     /// - Parameter packet:       the packet to parse
     ///
-    func parseGuiClients( _ packet: DiscoveryPacket) -> [GuiClient] {
+    private func parseGuiClients( _ packet: DiscoveryPacket) -> [GuiClient] {
         var guiClients = [GuiClient]()
         
         guard packet.guiClientPrograms != "" && packet.guiClientStations != "" && packet.guiClientHandles != "" else { return guiClients }
@@ -284,13 +285,10 @@ public final class Discovery: NSObject {
         }
         return nil
     }
-
-    // ----------------------------------------------------------------------------
-    // *** Backing properties (Do NOT use) ***
-
-    private var _discoveryPackets = [DiscoveryPacket]()
-    private var _radios = [Radio]()
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - GCDAsyncUdpSocketDelegate extension
 
 extension Discovery: GCDAsyncUdpSocketDelegate {
     /// The Socket received data
@@ -302,7 +300,7 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
     ///   - address:        the Address of the sender
     ///   - filterContext:  the FilterContext
     ///
-    @objc public func udpSocket(_ sock: GCDAsyncUdpSocket, didReceive data: Data, fromAddress address: Data, withFilterContext filterContext: Any?) {
+    public func udpSocket(_ sock: GCDAsyncUdpSocket, didReceive data: Data, fromAddress address: Data, withFilterContext filterContext: Any?) {
         // VITA encoded Discovery packet?
         guard let vita = Vita.decodeFrom(data: data) else { return }
         
@@ -371,145 +369,191 @@ public struct DiscoveryPacket : Equatable, Hashable {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
 
-    public var lastSeen : Date {
-        get { Api.objectQ.sync { _lastSeen } }
-        set { Api.objectQ.sync(flags: .barrier) {_lastSeen = newValue }}}
-    
-    public var availableClients : Int {
-        get { Api.objectQ.sync { _availableClients } }
-        set { Api.objectQ.sync(flags: .barrier) {_availableClients = newValue }}}
-    public var availablePanadapters: Int {
-        get { Api.objectQ.sync { _availablePanadapters } }
-        set { Api.objectQ.sync(flags: .barrier) {_availablePanadapters = newValue }}}
-    public var availableSlices: Int {
-        get { Api.objectQ.sync { _availableSlices } }
-        set { Api.objectQ.sync(flags: .barrier) {_availableSlices = newValue }}}
-    public var callsign: String {
-        get { Api.objectQ.sync { _callsign } }
-        set { Api.objectQ.sync(flags: .barrier) {_callsign = newValue }}}
-    public var discoveryVersion: String {
-        get { Api.objectQ.sync { _discoveryVersion } }
-        set { Api.objectQ.sync(flags: .barrier) {_discoveryVersion = newValue }}}
-    public var firmwareVersion: String {
-        get { Api.objectQ.sync { _firmwareVersion } }
-        set { Api.objectQ.sync(flags: .barrier) {_firmwareVersion = newValue }}}
-    public var fpcMac: String {
-        get { Api.objectQ.sync { _fpcMac } }
-        set { Api.objectQ.sync(flags: .barrier) {_fpcMac = newValue }}}
-    public var guiClientHandles: String {
-        get { Api.objectQ.sync { _guiClientHandles } }
-        set { Api.objectQ.sync(flags: .barrier) {_guiClientHandles = newValue }}}
-    public var guiClientPrograms: String {
-        get { Api.objectQ.sync { _guiClientPrograms } }
-        set { Api.objectQ.sync(flags: .barrier) {_guiClientPrograms = newValue }}}
-    public var guiClientStations: String {
-        get { Api.objectQ.sync { _guiClientStations } }
-        set { Api.objectQ.sync(flags: .barrier) {_guiClientStations = newValue }}}
-    public var guiClientHosts: String {
-        get { Api.objectQ.sync { _guiClientHosts } }
-        set { Api.objectQ.sync(flags: .barrier) {_guiClientHosts = newValue }}}
-    public var guiClientIps: String {
-        get { Api.objectQ.sync { _guiClientIps } }
-        set { Api.objectQ.sync(flags: .barrier) {_guiClientIps = newValue }}}
-    public var inUseHost: String {
-        get { Api.objectQ.sync { _inUseHost } }
-        set { Api.objectQ.sync(flags: .barrier) {_inUseHost = newValue }}}
-    public var inUseIp: String {
-        get { Api.objectQ.sync { _inUseIp } }
-        set { Api.objectQ.sync(flags: .barrier) {_inUseIp = newValue }}}
-    public var licensedClients: Int {
-        get { Api.objectQ.sync { _licensedClients } }
-        set { Api.objectQ.sync(flags: .barrier) {_licensedClients = newValue }}}
-    public var maxLicensedVersion: String {
-        get { Api.objectQ.sync { _maxLicensedVersion } }
-        set { Api.objectQ.sync(flags: .barrier) {_maxLicensedVersion = newValue }}}
-    public var maxPanadapters: Int {
-        get { Api.objectQ.sync { _maxPanadapters } }
-        set { Api.objectQ.sync(flags: .barrier) {_maxPanadapters = newValue }}}
-    public var maxSlices: Int {
-        get { Api.objectQ.sync { _maxSlices } }
-        set { Api.objectQ.sync(flags: .barrier) {_maxSlices = newValue }}}
-    public var model: String {
-        get { Api.objectQ.sync { _model } }
-        set { Api.objectQ.sync(flags: .barrier) {_model = newValue }}}
-    public var nickname: String {
-        get { Api.objectQ.sync { _nickname } }
-        set { Api.objectQ.sync(flags: .barrier) {_nickname = newValue }}}
-    public var port: Int {
-        get { Api.objectQ.sync { _port } }
-        set { Api.objectQ.sync(flags: .barrier) {_port = newValue }}}
-    public var publicIp: String {
-        get { Api.objectQ.sync { _publicIp } }
-        set { Api.objectQ.sync(flags: .barrier) {_publicIp = newValue }}}
-    public var publicTlsPort: Int {
-        get { Api.objectQ.sync { _publicTlsPort } }
-        set { Api.objectQ.sync(flags: .barrier) {_publicTlsPort = newValue }}}
-    public var publicUdpPort: Int {
-        get { Api.objectQ.sync { _publicUdpPort } }
-        set { Api.objectQ.sync(flags: .barrier) {_publicUdpPort = newValue }}}
-    public var publicUpnpTlsPort: Int {
-        get { Api.objectQ.sync { _publicUpnpTlsPort } }
-        set { Api.objectQ.sync(flags: .barrier) {_publicUpnpTlsPort = newValue }}}
-    public var publicUpnpUdpPort: Int {
-        get { Api.objectQ.sync { _publicUpnpUdpPort } }
-        set { Api.objectQ.sync(flags: .barrier) {_publicUpnpUdpPort = newValue }}}
-    public var radioLicenseId: String {
-        get { Api.objectQ.sync { _radioLicenseId } }
-        set { Api.objectQ.sync(flags: .barrier) {_radioLicenseId = newValue }}}
-    public var requiresAdditionalLicense: Bool {
-        get { Api.objectQ.sync { _requiresAdditionalLicense } }
-        set { Api.objectQ.sync(flags: .barrier) {_requiresAdditionalLicense = newValue }}}
-    public var serialNumber: String {
-        get { Api.objectQ.sync { _serialNumber } }
-        set { Api.objectQ.sync(flags: .barrier) {_serialNumber = newValue }}}
-    public var status: String {
-        get { Api.objectQ.sync { _status } }
-        set { Api.objectQ.sync(flags: .barrier) {_status = newValue }}}
-    public var upnpSupported: Bool {
-        get { Api.objectQ.sync { _upnpSupported } }
-        set { Api.objectQ.sync(flags: .barrier) {_upnpSupported = newValue }}}
-    public var wanConnected: Bool {
-        get { Api.objectQ.sync { _wanConnected } }
-        set { Api.objectQ.sync(flags: .barrier) {_wanConnected = newValue }}}
-    
+    public var lastSeen : Date
+
+    public var availableClients = 0
+    public var availablePanadapters = 0
+    public var availableSlices = 0
+    public var callsign = ""
+    public var discoveryVersion = ""
+    public var firmwareVersion = ""
+    public var fpcMac = ""
+    public var guiClientHandles = ""
+    public var guiClientPrograms = ""
+    public var guiClientStations = ""
+    public var guiClientHosts = ""
+    public var guiClientIps = ""
+    public var inUseHost = ""
+    public var inUseIp = ""
+    public var licensedClients = 0
+    public var maxLicensedVersion = ""
+    public var maxPanadapters = 0
+    public var maxSlices = 0
+    public var model = ""
+    public var nickname = ""
+    public var port = 0
+    public var publicIp = ""
+    public var publicTlsPort = 0
+    public var publicUdpPort = 0
+    public var publicUpnpTlsPort = 0
+    public var publicUpnpUdpPort = 0
+    public var radioLicenseId = ""
+    public var requiresAdditionalLicense = false
+    public var serialNumber = ""
+    public var status = ""
+    public var upnpSupported = false
+    public var wanConnected = false
+
     // FIXME: Not really part of the DiscoveryPacket
-    public var isPortForwardOn: Bool {
-        get { Api.objectQ.sync { _isPortForwardOn } }
-        set { Api.objectQ.sync(flags: .barrier) {_isPortForwardOn = newValue }}}
-    public var isWan: Bool {
-        get { Api.objectQ.sync { _isWan } }
-        set { Api.objectQ.sync(flags: .barrier) {_isWan = newValue }}}
-    public var localInterfaceIP: String {
-        get { Api.objectQ.sync { _localInterfaceIP } }
-        set { Api.objectQ.sync(flags: .barrier) {_localInterfaceIP = newValue }}}
+    public var isPortForwardOn = false
+    public var isWan = false
+    public var localInterfaceIP = ""
 //    public var lowBandwidthConnect: Bool {
 //        get { Api.objectQ.sync { _lowBandwidthConnect } }
 //        set { Api.objectQ.sync(flags: .barrier) {_lowBandwidthConnect = newValue }}}
-    public var negotiatedHolePunchPort: Int {               // FIXME: never set anywhere
-        get { Api.objectQ.sync { _negotiatedHolePunchPort } }
-        set { Api.objectQ.sync(flags: .barrier) {_negotiatedHolePunchPort = newValue }}}
-    public var requiresHolePunch: Bool {
-        get { Api.objectQ.sync { _requiresHolePunch } }
-        set { Api.objectQ.sync(flags: .barrier) {_requiresHolePunch = newValue }}}
-    public var wanHandle: String {
-        get { Api.objectQ.sync { _wanHandle } }
-        set { Api.objectQ.sync(flags: .barrier) {_wanHandle = newValue }}}
+    public var negotiatedHolePunchPort = 0
+    public var requiresHolePunch = false
+    public var wanHandle = ""
+
+//    public var lastSeen : Date {
+//        get { Api.objectQ.sync { _lastSeen } }
+//        set { Api.objectQ.sync(flags: .barrier) {_lastSeen = newValue }}}
+//
+//    public var availableClients : Int {
+//        get { Api.objectQ.sync { _availableClients } }
+//        set { Api.objectQ.sync(flags: .barrier) {_availableClients = newValue }}}
+//    public var availablePanadapters: Int {
+//        get { Api.objectQ.sync { _availablePanadapters } }
+//        set { Api.objectQ.sync(flags: .barrier) {_availablePanadapters = newValue }}}
+//    public var availableSlices: Int {
+//        get { Api.objectQ.sync { _availableSlices } }
+//        set { Api.objectQ.sync(flags: .barrier) {_availableSlices = newValue }}}
+//    public var callsign: String {
+//        get { Api.objectQ.sync { _callsign } }
+//        set { Api.objectQ.sync(flags: .barrier) {_callsign = newValue }}}
+//    public var discoveryVersion: String {
+//        get { Api.objectQ.sync { _discoveryVersion } }
+//        set { Api.objectQ.sync(flags: .barrier) {_discoveryVersion = newValue }}}
+//    public var firmwareVersion: String {
+//        get { Api.objectQ.sync { _firmwareVersion } }
+//        set { Api.objectQ.sync(flags: .barrier) {_firmwareVersion = newValue }}}
+//    public var fpcMac: String {
+//        get { Api.objectQ.sync { _fpcMac } }
+//        set { Api.objectQ.sync(flags: .barrier) {_fpcMac = newValue }}}
+//    public var guiClientHandles: String {
+//        get { Api.objectQ.sync { _guiClientHandles } }
+//        set { Api.objectQ.sync(flags: .barrier) {_guiClientHandles = newValue }}}
+//    public var guiClientPrograms: String {
+//        get { Api.objectQ.sync { _guiClientPrograms } }
+//        set { Api.objectQ.sync(flags: .barrier) {_guiClientPrograms = newValue }}}
+//    public var guiClientStations: String {
+//        get { Api.objectQ.sync { _guiClientStations } }
+//        set { Api.objectQ.sync(flags: .barrier) {_guiClientStations = newValue }}}
+//    public var guiClientHosts: String {
+//        get { Api.objectQ.sync { _guiClientHosts } }
+//        set { Api.objectQ.sync(flags: .barrier) {_guiClientHosts = newValue }}}
+//    public var guiClientIps: String {
+//        get { Api.objectQ.sync { _guiClientIps } }
+//        set { Api.objectQ.sync(flags: .barrier) {_guiClientIps = newValue }}}
+//    public var inUseHost: String {
+//        get { Api.objectQ.sync { _inUseHost } }
+//        set { Api.objectQ.sync(flags: .barrier) {_inUseHost = newValue }}}
+//    public var inUseIp: String {
+//        get { Api.objectQ.sync { _inUseIp } }
+//        set { Api.objectQ.sync(flags: .barrier) {_inUseIp = newValue }}}
+//    public var licensedClients: Int {
+//        get { Api.objectQ.sync { _licensedClients } }
+//        set { Api.objectQ.sync(flags: .barrier) {_licensedClients = newValue }}}
+//    public var maxLicensedVersion: String {
+//        get { Api.objectQ.sync { _maxLicensedVersion } }
+//        set { Api.objectQ.sync(flags: .barrier) {_maxLicensedVersion = newValue }}}
+//    public var maxPanadapters: Int {
+//        get { Api.objectQ.sync { _maxPanadapters } }
+//        set { Api.objectQ.sync(flags: .barrier) {_maxPanadapters = newValue }}}
+//    public var maxSlices: Int {
+//        get { Api.objectQ.sync { _maxSlices } }
+//        set { Api.objectQ.sync(flags: .barrier) {_maxSlices = newValue }}}
+//    public var model: String {
+//        get { Api.objectQ.sync { _model } }
+//        set { Api.objectQ.sync(flags: .barrier) {_model = newValue }}}
+//    public var nickname: String {
+//        get { Api.objectQ.sync { _nickname } }
+//        set { Api.objectQ.sync(flags: .barrier) {_nickname = newValue }}}
+//    public var port: Int {
+//        get { Api.objectQ.sync { _port } }
+//        set { Api.objectQ.sync(flags: .barrier) {_port = newValue }}}
+//    public var publicIp: String {
+//        get { Api.objectQ.sync { _publicIp } }
+//        set { Api.objectQ.sync(flags: .barrier) {_publicIp = newValue }}}
+//    public var publicTlsPort: Int {
+//        get { Api.objectQ.sync { _publicTlsPort } }
+//        set { Api.objectQ.sync(flags: .barrier) {_publicTlsPort = newValue }}}
+//    public var publicUdpPort: Int {
+//        get { Api.objectQ.sync { _publicUdpPort } }
+//        set { Api.objectQ.sync(flags: .barrier) {_publicUdpPort = newValue }}}
+//    public var publicUpnpTlsPort: Int {
+//        get { Api.objectQ.sync { _publicUpnpTlsPort } }
+//        set { Api.objectQ.sync(flags: .barrier) {_publicUpnpTlsPort = newValue }}}
+//    public var publicUpnpUdpPort: Int {
+//        get { Api.objectQ.sync { _publicUpnpUdpPort } }
+//        set { Api.objectQ.sync(flags: .barrier) {_publicUpnpUdpPort = newValue }}}
+//    public var radioLicenseId: String {
+//        get { Api.objectQ.sync { _radioLicenseId } }
+//        set { Api.objectQ.sync(flags: .barrier) {_radioLicenseId = newValue }}}
+//    public var requiresAdditionalLicense: Bool {
+//        get { Api.objectQ.sync { _requiresAdditionalLicense } }
+//        set { Api.objectQ.sync(flags: .barrier) {_requiresAdditionalLicense = newValue }}}
+//    public var serialNumber: String {
+//        get { Api.objectQ.sync { _serialNumber } }
+//        set { Api.objectQ.sync(flags: .barrier) {_serialNumber = newValue }}}
+//    public var status: String {
+//        get { Api.objectQ.sync { _status } }
+//        set { Api.objectQ.sync(flags: .barrier) {_status = newValue }}}
+//    public var upnpSupported: Bool {
+//        get { Api.objectQ.sync { _upnpSupported } }
+//        set { Api.objectQ.sync(flags: .barrier) {_upnpSupported = newValue }}}
+//    public var wanConnected: Bool {
+//        get { Api.objectQ.sync { _wanConnected } }
+//        set { Api.objectQ.sync(flags: .barrier) {_wanConnected = newValue }}}
+//
+//    // FIXME: Not really part of the DiscoveryPacket
+//    public var isPortForwardOn: Bool {
+//        get { Api.objectQ.sync { _isPortForwardOn } }
+//        set { Api.objectQ.sync(flags: .barrier) {_isPortForwardOn = newValue }}}
+//    public var isWan: Bool {
+//        get { Api.objectQ.sync { _isWan } }
+//        set { Api.objectQ.sync(flags: .barrier) {_isWan = newValue }}}
+//    public var localInterfaceIP: String {
+//        get { Api.objectQ.sync { _localInterfaceIP } }
+//        set { Api.objectQ.sync(flags: .barrier) {_localInterfaceIP = newValue }}}
+////    public var lowBandwidthConnect: Bool {
+////        get { Api.objectQ.sync { _lowBandwidthConnect } }
+////        set { Api.objectQ.sync(flags: .barrier) {_lowBandwidthConnect = newValue }}}
+//    public var negotiatedHolePunchPort: Int {               // FIXME: never set anywhere
+//        get { Api.objectQ.sync { _negotiatedHolePunchPort } }
+//        set { Api.objectQ.sync(flags: .barrier) {_negotiatedHolePunchPort = newValue }}}
+//    public var requiresHolePunch: Bool {
+//        get { Api.objectQ.sync { _requiresHolePunch } }
+//        set { Api.objectQ.sync(flags: .barrier) {_requiresHolePunch = newValue }}}
+//    public var wanHandle: String {
+//        get { Api.objectQ.sync { _wanHandle } }
+//        set { Api.objectQ.sync(flags: .barrier) {_wanHandle = newValue }}}
     
-    public var description : String {
-        return """
-    Radio Serial:\t\t\(serialNumber)
-    Licensed Version:\t\(maxLicensedVersion)
-    Radio ID:\t\t\t\(radioLicenseId)
-    Radio IP:\t\t\t\(publicIp)
-    Radio Firmware:\t\t\(firmwareVersion)
-    
-    Handles:\t\(guiClientHandles)
-    Hosts:\t\(guiClientHosts)
-    Ips:\t\t\(guiClientIps)
-    Programs:\t\(guiClientPrograms)
-    Stations:\t\(guiClientStations)
-    """
-    }
+//    public var description : String {
+//        return """
+//    Radio Serial:\t\t\(serialNumber)
+//    Licensed Version:\t\(maxLicensedVersion)
+//    Radio ID:\t\t\t\(radioLicenseId)
+//    Radio IP:\t\t\t\(publicIp)
+//    Radio Firmware:\t\t\(firmwareVersion)
+//
+//    Handles:\t\(guiClientHandles)
+//    Hosts:\t\(guiClientHosts)
+//    Ips:\t\t\(guiClientIps)
+//    Programs:\t\(guiClientPrograms)
+//    Stations:\t\(guiClientStations)
+//    """
+//    }
     
     public var connectionString : String { "\(isWan ? "wan" : "local").\(serialNumber)" }
     
@@ -521,48 +565,48 @@ public struct DiscoveryPacket : Equatable, Hashable {
     // ----------------------------------------------------------------------------
     // *** Backing properties (Do NOT use) ***
     
-    private var _lastSeen                   = Date()
-    
-    private var _availableClients           = 0
-    private var _availablePanadapters       = 0
-    private var _availableSlices            = 0
-    private var _callsign                   = ""
-    private var _discoveryVersion           = ""
-    private var _firmwareVersion            = ""
-    private var _fpcMac                     = ""
-    private var _guiClientHandles           = ""
-    private var _guiClientHosts             = ""
-    private var _guiClientIps               = ""
-    private var _guiClientPrograms          = ""
-    private var _guiClientStations          = ""
-    private var _inUseHost                  = ""
-    private var _inUseIp                    = ""
-    private var _licensedClients            = 0
-    private var _maxLicensedVersion         = ""
-    private var _maxPanadapters             = 0
-    private var _maxSlices                  = 0
-    private var _model                      = ""
-    private var _nickname                   = ""
-    private var _port                       = -1
-    private var _publicIp                   = ""
-    private var _publicTlsPort              = -1
-    private var _publicUdpPort              = -1
-    private var _publicUpnpTlsPort          = -1
-    private var _publicUpnpUdpPort          = -1
-    private var _radioLicenseId             = ""
-    private var _requiresAdditionalLicense  = false
-    private var _serialNumber               = ""
-    private var _status                     = ""
-    private var _upnpSupported              = false
-    private var _wanConnected               = false
+//    private var _lastSeen                   = Date()
+//
+//    private var _availableClients           = 0
+//    private var _availablePanadapters       = 0
+//    private var _availableSlices            = 0
+//    private var _callsign                   = ""
+//    private var _discoveryVersion           = ""
+//    private var _firmwareVersion            = ""
+//    private var _fpcMac                     = ""
+//    private var _guiClientHandles           = ""
+//    private var _guiClientHosts             = ""
+//    private var _guiClientIps               = ""
+//    private var _guiClientPrograms          = ""
+//    private var _guiClientStations          = ""
+//    private var _inUseHost                  = ""
+//    private var _inUseIp                    = ""
+//    private var _licensedClients            = 0
+//    private var _maxLicensedVersion         = ""
+//    private var _maxPanadapters             = 0
+//    private var _maxSlices                  = 0
+//    private var _model                      = ""
+//    private var _nickname                   = ""
+//    private var _port                       = -1
+//    private var _publicIp                   = ""
+//    private var _publicTlsPort              = -1
+//    private var _publicUdpPort              = -1
+//    private var _publicUpnpTlsPort          = -1
+//    private var _publicUpnpUdpPort          = -1
+//    private var _radioLicenseId             = ""
+//    private var _requiresAdditionalLicense  = false
+//    private var _serialNumber               = ""
+//    private var _status                     = ""
+//    private var _upnpSupported              = false
+//    private var _wanConnected               = false
     
     // FIXME: Not really part of the DiscoveryPacket
-    private var _isPortForwardOn            = false
-    private var _isWan                      = false
-    private var _localInterfaceIP           = ""
-    private var _lowBandwidthConnect        = false
-    private var _negotiatedHolePunchPort    = -1
-    private var _requiresHolePunch          = false
-    private var _wanHandle                  = ""
+//    private var _isPortForwardOn            = false
+//    private var _isWan                      = false
+//    private var _localInterfaceIP           = ""
+//    private var _lowBandwidthConnect        = false
+//    private var _negotiatedHolePunchPort    = -1
+//    private var _requiresHolePunch          = false
+//    private var _wanHandle                  = ""
 }
 

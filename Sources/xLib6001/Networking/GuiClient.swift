@@ -38,16 +38,4 @@ public class GuiClient: ObservableObject, Identifiable {
         self.isLocalPtt = isLocalPtt
         self.isThisClient = isThisClient
     }
-    //
-    //  // ----------------------------------------------------------------------------
-    //  // *** Backing properties (Do NOT use) ***
-    //
-    //  private var _clientId      : String? = nil
-    //  private var _handle        : Handle = 0
-    //  private var _host          = ""
-    //  private var _ip            = ""
-    //  private var _isLocalPtt    = false
-    //  private var _isThisClient  = false
-    //  private var _program       = ""
-    //  private var _station       = ""
 }

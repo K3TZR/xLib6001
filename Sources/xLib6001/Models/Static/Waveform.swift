@@ -16,12 +16,12 @@ import Foundation
 ///
 public final class Waveform: ObservableObject {
     // ----------------------------------------------------------------------------
-    // MARK: - Public properties
+    // MARK: - Published properties
 
     @Published public var waveformList = ""
 
     // ----------------------------------------------------------------------------
-    // MARK: - Internal properties
+    // MARK: - Internal types
 
     enum WaveformTokens: String {
         case waveformList = "installed_list"
@@ -32,6 +32,9 @@ public final class Waveform: ObservableObject {
 
     private let _log = LogProxy.sharedInstance.libMessage
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - StaticModel extension
 
 extension Waveform: StaticModel {
     /// Parse a Waveform status message

@@ -8,8 +8,6 @@
 
 import Foundation
 
-public typealias EqualizerId = String
-
 /// Equalizer Class implementation
 ///
 ///      creates an Equalizer instance to be used by a Client to support the
@@ -96,6 +94,9 @@ public final class Equalizer: ObservableObject, Identifiable {
         _api.send("eq " + id + " " + token + "=\(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension Equalizer: DynamicModel {
     /// Parse a Stream status message

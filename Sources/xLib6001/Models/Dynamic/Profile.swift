@@ -8,9 +8,6 @@
 
 import Foundation
 
-public typealias ProfileId = String
-public typealias ProfileName = String
-
 /// Profile Class implementation
 ///
 ///      creates a Profiles instance to be used by a Client to support the
@@ -82,7 +79,11 @@ public final class Profile: ObservableObject, Identifiable {
     }
 }
 
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
+
 extension Profile: DynamicModel {
+
     /// Parse a Profile status message
     ///   Format: global list=<value>^<value>^...<value>^
     ///   Format: global current=<value>

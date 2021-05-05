@@ -9,8 +9,6 @@
 import Foundation
 import CocoaAsyncSocket
 
-public typealias IdToken = String
-
 // --------------------------------------------------------------------------------
 // MARK: - WanServer Delegate protocol
 // --------------------------------------------------------------------------------
@@ -49,14 +47,7 @@ public struct WanTestConnectionResults {
 ///  WanServer Class implementation
 ///      creates a WanServer instance to communicate with the SmartLink server
 ///      to obtain access to a remote Flexradio
-///
 public final class WanServer: NSObject, ObservableObject {
-    // ----------------------------------------------------------------------------
-    // MARK: - Static properties
-    
-    static let pingQ    = DispatchQueue(label: Api.kName + ".WanServer.pingQ")
-    static let socketQ  = DispatchQueue(label: Api.kName + ".WanServer.socketQ")
-    
     // ----------------------------------------------------------------------------
     // MARK: - Published properties
     
@@ -95,43 +86,46 @@ public final class WanServer: NSObject, ObservableObject {
     private let kAppDisconnectTag   = 3
     private let kTestTag            = 4
 
+    private let _pingQ   = DispatchQueue(label: Api.kName + ".WanServer.pingQ")
+    private let _socketQ = DispatchQueue(label: Api.kName + ".WanServer.socketQ")
+
     // ----------------------------------------------------------------------------
     // MARK: - Private types
 
-    private enum MessageToken: String {
+    private enum MessageTokens: String {
         case application
         case radio
         case Received
     }
-    private enum ApplicationToken: String {
+    private enum ApplicationTokens: String {
         case info
         case registrationInvalid = "registration_invalid"
         case userSettings        = "user_settings"
     }
-    private enum ApplicationInfoToken: String {
+    private enum InfoTokens: String {
         case application                      // dummy
         case info                             // dummy
         case publicIp = "public_ip"
     }
-    private enum ApplicationUserSettingsToken: String {
+    private enum UserSettingsTokens: String {
         case application                      // dummy
         case userSettings = "user_settings"   // dummy
         case callsign
         case firstName    = "first_name"
         case lastName     = "last_name"
     }
-    private enum RadioToken: String {
+    private enum RadioTokens: String {
         case connectReady   = "connect_ready"
         case list
         case testConnection = "test_connection"
     }
-    private enum RadioConnectReadyToken: String {
+    private enum ConnectReadyTokens: String {
         case radio                            // dummy
         case connectReady = "connect_ready"   // dummy
         case handle
         case serial
     }
-    private enum RadioTestConnectionResultsToken: String {
+    private enum TestConnectionTokens: String {
         case radio                                     // dummy
         case testConnection        = "test_connection" // dummy
         case forwardTcpPortWorking = "forward_tcp_port_working"
@@ -151,7 +145,7 @@ public final class WanServer: NSObject, ObservableObject {
         self.delegate = delegate
                 
         // get a WAN server socket & set it's parameters
-        _tlsSocket = GCDAsyncSocket(delegate: self, delegateQueue: WanServer.socketQ)
+        _tlsSocket = GCDAsyncSocket(delegate: self, delegateQueue: _socketQ)
         _tlsSocket.isIPv4PreferredOverIPv6 = true
         _tlsSocket.isIPv6Enabled = false
     }
@@ -191,7 +185,7 @@ public final class WanServer: NSObject, ObservableObject {
         _tlsSocket.disconnect()
     }
     
-    /// Initiate a connection to a radio
+    /// Initiate a Smartlink connection to a radio
     /// - Parameters:
     ///   - serialNumber:       the serial number of the Radio
     ///   - holePunchPort:      the negotiated Hole Punch port number
@@ -205,7 +199,7 @@ public final class WanServer: NSObject, ObservableObject {
         sendTlsCommand("application connect serial=\(serialNumber) hole_punch_port=\(holePunchPort))", timeout: _timeout, tag: kAppConnectTag)
     }
     
-    /// Disconnect a Radio
+    /// Disconnect a Smartlink connection to a Radio
     /// - Parameter serialNumber:         the serial number of the Radio
     public func disconnectFrom(_ serialNumber: String) {
         // insure that the WanServer is connected to SmartLink
@@ -214,7 +208,7 @@ public final class WanServer: NSObject, ObservableObject {
             return
         }
         // send a command to SmartLink to request disconnection from the specified Radio
-        sendTlsCommand("application disconnect_users serial=\(serialNumber)" , timeout: _timeout, tag: kAppDisconnectTag)
+        sendTlsCommand("application disconnect_users serial=\(serialNumber)", timeout: _timeout, tag: kAppDisconnectTag)
     }
     
     /// Disconnect a single Client
@@ -231,7 +225,7 @@ public final class WanServer: NSObject, ObservableObject {
         sendTlsCommand("application disconnect_users serial=\(serialNumber) handle=\(handle.hex)" , timeout: _timeout, tag: kAppDisconnectTag)
     }
     
-    /// Test connection
+    /// Test the Smartlink connection to a Radio
     /// - Parameter serialNumber:         the serial number of the Radio
     public func test(_ serialNumber: String) {
         // insure that the WanServer is connected to SmartLink
@@ -248,7 +242,7 @@ public final class WanServer: NSObject, ObservableObject {
     // ------------------------------------------------------------------------------
     // MARK: - Private methods
     
-    /// Parse a received WanServer message
+    /// Parse a received "message" message
     ///   called by socket(:didReadData:withTag:), executes on the socketQ
     ///
     /// - Parameter text:         the entire message
@@ -258,7 +252,7 @@ public final class WanServer: NSObject, ObservableObject {
         let properties = msg.keyValuesArray()
         
         // Check for unknown Message Types
-        guard let token = MessageToken(rawValue: properties[0].key)  else {
+        guard let token = MessageTokens(rawValue: properties[0].key)  else {
             // log it and ignore the message
             _log("WanServer, message: \(msg)", .warning, #function, #file, #line)
             return
@@ -276,7 +270,7 @@ public final class WanServer: NSObject, ObservableObject {
     /// - Parameter properties:        message KeyValue pairs
     private func parseApplication(_ properties: KeyValuesArray) {
         // Check for unknown property (ignore 0th property)
-        guard let token = ApplicationToken(rawValue: properties[1].key)  else {
+        guard let token = ApplicationTokens(rawValue: properties[1].key)  else {
             // log it and ignore the message
             _log("WanServer, unknown application token: \(properties[1].key)", .warning, #function, #file, #line)
             return
@@ -293,7 +287,7 @@ public final class WanServer: NSObject, ObservableObject {
     /// - Parameter msg:        the message (after the primary type)
     private func parseRadio(_ properties: KeyValuesArray, msg: String) {
         // Check for unknown Message Types (ignore 0th property)
-        guard let token = RadioToken(rawValue: properties[1].key)  else {
+        guard let token = RadioTokens(rawValue: properties[1].key)  else {
             // log it and ignore the message
             _log("WanServer, unknown radio token: \(properties[1].key)", .warning, #function, #file, #line)
             return
@@ -307,13 +301,13 @@ public final class WanServer: NSObject, ObservableObject {
         }
     }
     
-    /// Parse Application properties
+    /// Parse a received "application" message
     /// - Parameter properties:         a KeyValuesArray
     private func parseApplicationInfo(_ properties: KeyValuesArray) {
         // process each key/value pair, <key=value>
         for property in properties {
             // Check for Unknown Keys
-            guard let token = ApplicationInfoToken(rawValue: property.key)  else {
+            guard let token = InfoTokens(rawValue: property.key)  else {
                 // log it and ignore the Key
                 _log("WanServer, unknown info token: \(property.key)", .warning, #function, #file, #line)
                 continue
@@ -334,7 +328,7 @@ public final class WanServer: NSObject, ObservableObject {
         _log("WanServer, invalid registration: \(properties.count == 3 ? properties[2].key : "")", .warning, #function, #file, #line)
     }
     
-    /// Parse User properties
+    /// Parse a received "user settings" message
     /// - Parameter properties:         a KeyValuesArray
     private func parseUserSettings(_ properties: KeyValuesArray) {
         var callsign = ""
@@ -344,7 +338,7 @@ public final class WanServer: NSObject, ObservableObject {
         // process each key/value pair, <key=value>
         for property in properties {
             // Check for Unknown Keys
-            guard let token = ApplicationUserSettingsToken(rawValue: property.key)  else {
+            guard let token = UserSettingsTokens(rawValue: property.key)  else {
                 // log it and ignore the Key
                 _log("WanServer, unknown settings token: \(property.key)", .warning, #function, #file, #line)
                 continue
@@ -362,7 +356,7 @@ public final class WanServer: NSObject, ObservableObject {
         delegate?.wanSettings(name: firstName + " " + lastName, call: callsign)
     }
     
-    /// Parse Radio properties
+    /// Parse a received "connect ready" message
     /// - Parameter properties:         a KeyValuesArray
     private func parseRadioConnectReady(_ properties: KeyValuesArray) {
         var handle = ""
@@ -371,7 +365,7 @@ public final class WanServer: NSObject, ObservableObject {
         // process each key/value pair, <key=value>
         for property in properties {
             // Check for Unknown Keys
-            guard let token = RadioConnectReadyToken(rawValue: property.key)  else {
+            guard let token = ConnectReadyTokens(rawValue: property.key)  else {
                 // log it and ignore the Key
                 _log("WanServer, unknown connect token: \(property.key)", .warning, #function, #file, #line)
                 continue
@@ -391,7 +385,7 @@ public final class WanServer: NSObject, ObservableObject {
         }
     }
     
-    /// Parse a list of Radios
+    /// Parse a received "radio list" message
     /// - Parameter msg:        the list
     private func parseRadioList(_ msg: String.SubSequence) {
         var publicTlsPortToUse = -1
@@ -426,7 +420,6 @@ public final class WanServer: NSObject, ObservableObject {
                 }
                 packet.publicTlsPort = publicTlsPortToUse
                 packet.publicUdpPort = publicUdpPortToUse
-                packet.isPortForwardOn = packet.isPortForwardOn
                 if let localAddr = _tlsSocket.localHost {
                     packet.localInterfaceIP = localAddr
                 }
@@ -442,7 +435,7 @@ public final class WanServer: NSObject, ObservableObject {
         }
     }
 
-    /// Parse a Test Connection result
+    /// Parse a received "test results" message
     /// - Parameter properties:         a KeyValuesArray
     private func parseTestConnectionResults(_ properties: KeyValuesArray) {
         var results = WanTestConnectionResults()
@@ -450,7 +443,7 @@ public final class WanServer: NSObject, ObservableObject {
         // process each key/value pair, <key=value>
         for property in properties {
             // Check for Unknown Keys
-            guard let token = RadioTestConnectionResultsToken(rawValue: property.key)  else {
+            guard let token = TestConnectionTokens(rawValue: property.key)  else {
                 // log it and ignore the Key
                 _log("WanServer, unknown testConnection token: \(property.key)", .warning, #function, #file, #line)
                 continue
@@ -478,10 +471,10 @@ public final class WanServer: NSObject, ObservableObject {
         _tlsSocket.readData(to: GCDAsyncSocket.lfData(), withTimeout: -1, tag: 0)
     }
     
-    /// Begin pinging the SmartLink server
+    /// Ping the SmartLink server
     private func startPinging() {
         // create the timer's dispatch source
-        _pingTimer = DispatchSource.makeTimerSource(flags: [.strict], queue: WanServer.pingQ)
+        _pingTimer = DispatchSource.makeTimerSource(flags: [.strict], queue: _pingQ)
         
         // Set timer to start in 5 seconds and repeat every 10 seconds with 100 millisecond leeway
         _pingTimer?.schedule(deadline: DispatchTime.now() + DispatchTimeInterval.seconds(5), repeating: .seconds(10), leeway: .milliseconds(100))
@@ -497,7 +490,7 @@ public final class WanServer: NSObject, ObservableObject {
         _log("WanServer, started pinging: Host=\(_currentHost) Port=\(_currentPort)", .debug, #function, #file, #line)
     }
     
-    /// Stop pinging the server
+    /// Stop pinging the SmartLink server
     private func stopPinging() {
         // stop the Timer (if any)
         _pingTimer?.cancel()
@@ -506,7 +499,7 @@ public final class WanServer: NSObject, ObservableObject {
         _log("WanServer, stopped pinging: Host=\(_currentHost) Port=\(_currentPort) ", .debug, #function, #file, #line)
     }
     
-    /// Send a command to the server
+    /// Send a command to the server using TLS
     /// - Parameter cmd:                command text
     private func sendTlsCommand(_ cmd: String, timeout: TimeInterval, tag: Int = 0) {
         // send the specified command to the SmartLink server using TLS
@@ -514,6 +507,9 @@ public final class WanServer: NSObject, ObservableObject {
         _tlsSocket.write(command.data(using: String.Encoding.utf8, allowLossyConversion: false)!, withTimeout: timeout, tag: 0)
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - GCDAsyncSocketDelegate extension
 
 extension WanServer: GCDAsyncSocketDelegate {
     //      All are called on the _socketQ
@@ -526,10 +522,8 @@ extension WanServer: GCDAsyncSocketDelegate {
     //      and the socketDidDisconnect:withError: delegate method will be called with an error code.
     //
     
-    @objc public func socket(_ sock: GCDAsyncSocket, didConnectToHost host: String, port: UInt16) {
+    public func socket(_ sock: GCDAsyncSocket, didConnectToHost host: String, port: UInt16) {
         // Connected to the SmartLink server, save the ip & port
-//        _currentHost = sock.connectedHost ?? ""
-//        _currentPort = sock.connectedPort
         _currentHost = host
         _currentPort = port
 
@@ -545,7 +539,7 @@ extension WanServer: GCDAsyncSocketDelegate {
         DispatchQueue.main.async { self.isConnected = true }
     }
     
-    @objc public func socketDidSecure(_ sock: GCDAsyncSocket) {
+    public func socketDidSecure(_ sock: GCDAsyncSocket) {
         _log("WanServer, TLS connection secured", .debug, #function, #file, #line)
         
         // start pinging SmartLink server (if needed)
@@ -558,7 +552,7 @@ extension WanServer: GCDAsyncSocketDelegate {
         readNext()
     }
     
-    @objc public func socket(_ sock: GCDAsyncSocket, didRead data: Data, withTag tag: Int) {
+    public func socket(_ sock: GCDAsyncSocket, didRead data: Data, withTag tag: Int) {
         // get the bytes that were read
         let msg = String(data: data, encoding: .ascii)!
         
@@ -569,7 +563,7 @@ extension WanServer: GCDAsyncSocketDelegate {
         parseMsg(msg)
     }
     
-    @objc public func socketDidDisconnect(_ sock: GCDAsyncSocket, withError err: Error?) {
+    public func socketDidDisconnect(_ sock: GCDAsyncSocket, withError err: Error?) {
         // Disconnected from the SmartLink server
         let error = (err == nil ? "" : " with error: " + err!.localizedDescription)
         _log("WanServer, disconnected\(error) from: Host=\(_currentHost) Port=\(_currentPort)", .debug, #function, #file, #line)
@@ -579,12 +573,12 @@ extension WanServer: GCDAsyncSocketDelegate {
         _currentPort = 0
     }
     
-    @objc public func socket(_ sock: GCDAsyncSocket, shouldTimeoutWriteWithTag tag: Int, elapsed: TimeInterval, bytesDone length: UInt) -> TimeInterval {
+    public func socket(_ sock: GCDAsyncSocket, shouldTimeoutWriteWithTag tag: Int, elapsed: TimeInterval, bytesDone length: UInt) -> TimeInterval {
         _log("WanServer, write timeout: Host=\(_currentHost) Port=\(_currentPort)", .warning, #function, #file, #line)
         return 0
     }
     
-    @objc public func socket(_ sock: GCDAsyncSocket, shouldTimeoutReadWithTag tag: Int, elapsed: TimeInterval, bytesDone length: UInt) -> TimeInterval {
+    public func socket(_ sock: GCDAsyncSocket, shouldTimeoutReadWithTag tag: Int, elapsed: TimeInterval, bytesDone length: UInt) -> TimeInterval {
         _log("WanServer, read timeout: Host=\(_currentHost) Port=\(_currentPort)", .warning, #function, #file, #line)
         return 30.0
     }

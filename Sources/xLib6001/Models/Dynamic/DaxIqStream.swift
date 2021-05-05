@@ -6,8 +6,6 @@
 //  Copyright © 2017 Douglas Adams & Mario Illgen. All rights reserved.
 //
 
-public typealias DaxIqStreamId = StreamId
-
 import Foundation
 import Accelerate
 
@@ -95,6 +93,9 @@ public final class DaxIqStream: ObservableObject, Identifiable {
         _api.send("stream set \(id.hex) \(token.rawValue)=\(rate)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModelWithStream extension
 
 extension DaxIqStream: DynamicModelWithStream {
     /// Parse a Stream status message

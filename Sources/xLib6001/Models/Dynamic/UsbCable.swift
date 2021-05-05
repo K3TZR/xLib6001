@@ -8,8 +8,6 @@
 
 import Foundation
 
-public typealias UsbCableId = String
-
 /// USB Cable Class implementation
 ///
 ///      creates a USB Cable instance to be used by a Client to support the
@@ -137,6 +135,9 @@ public final class UsbCable: ObservableObject, Identifiable {
         _api.send("usb_cable set " + "\(id) " + token.rawValue + "=\(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension UsbCable: DynamicModel {
     /// Parse a USB Cable status message

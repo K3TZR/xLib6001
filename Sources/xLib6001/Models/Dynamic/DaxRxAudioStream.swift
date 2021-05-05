@@ -8,8 +8,6 @@
 
 import Foundation
 
-public typealias DaxRxStreamId = StreamId
-
 /// DaxRxAudioStream Class implementation
 ///
 ///      creates a DaxRxAudioStream instance to be used by a Client to support the
@@ -84,6 +82,9 @@ public final class DaxRxAudioStream: ObservableObject, Identifiable {
         _api.send("audio stream \(id.hex) slice \(slice!.id) " + tokenString + " \(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModelWithStream extension
 
 extension DaxRxAudioStream: DynamicModelWithStream {
     /// Parse an AudioStream status message

@@ -23,31 +23,25 @@ public protocol ApiDelegate {
 // MARK: - Class implementation
 
 /// API Class implementation
-///
-///      manages the connections to the Radio (hardware), responsible for the
-///      creation / destruction of the Radio class (the object analog of the
-///      Radio hardware)
-///
+///      Manages the connections to the Radio (hardware)
+///      Radio instances are created by Discovery
+///      Api connects/disconnects a Radio instance to/from the hardware Radio
 public final class Api {
-    public typealias CommandTuple = (command: String, diagnostic: Bool, replyHandler: ReplyHandler?)
-    
     // ----------------------------------------------------------------------------
     // MARK: - Static properties
-    
-    public static let kVersionSupported = Version("3.2.34")
-    
+
+    public static let objectQ           = DispatchQueue(label: Api.kName + ".objectQ", attributes: [.concurrent])
+
     public static let kBundleIdentifier = "net.k3tzr." + Api.kName
     public static let kDaxChannels      = ["None", "1", "2", "3", "4", "5", "6", "7", "8"]
     public static let kDaxIqChannels    = ["None", "1", "2", "3", "4"]
     public static let kName             = "xLib6001"
     public static let kNoError          = "0"
     
-    static        let objectQ           = DispatchQueue(label: Api.kName + ".objectQ", attributes: [.concurrent])
-    static        let kTcpTimeout       = 2.0     // seconds
-    static        let kNotInUse         = "in_use=0"
-    static        let kRemoved          = "removed"
-    static        let kConnected        = "connected"
-    static        let kDisconnected     = "disconnected"
+    public static let kConnected        = "connected"
+    public static let kDisconnected     = "disconnected"
+    public static let kNotInUse         = "in_use=0"
+    public static let kRemoved          = "removed"
 
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
@@ -64,6 +58,9 @@ public final class Api {
     public var pingerEnabled = true
     public var testerDelegate: ApiDelegate?
     public var testerModeEnabled = false
+
+    // ----------------------------------------------------------------------------
+    // MARK: - Public types
 
     public struct ConnectionParams {
         public init(index: Int,
@@ -149,7 +146,6 @@ public final class Api {
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
     
-    private var _activeRadio: Radio?
     private let _log = LogProxy.sharedInstance.libMessage
     private var _params: ConnectionParams!
     private var _pinger: Pinger?
@@ -162,18 +158,25 @@ public final class Api {
     private let _udpRegisterQ   = DispatchQueue(label: Api.kName + ".udpRegisterQ")
     private let _workerQ        = DispatchQueue(label: Api.kName + ".workerQ")
 
+    private let kVersionSupported = Version("3.2.34")
+    private let kTcpTimeout       = 2.0     // seconds
+
+    // ----------------------------------------------------------------------------
+    // MARK: - Backing properties (do not access)
+
+    private var _activeRadio: Radio?
+
     // ----------------------------------------------------------------------------
     // MARK: - Singleton
     
     /// Provide access to the API singleton
-    ///
     public static var sharedInstance = Api()
     
     private init() {
         // "private" prevents others from calling init()
         
         // initialize a TCP & UDP Manager for Commands & Streams
-        tcp = TcpManager(tcpReceiveQ: _tcpReceiveQ, tcpSendQ: _tcpSendQ, delegate: self, timeout: Api.kTcpTimeout)
+        tcp = TcpManager(tcpReceiveQ: _tcpReceiveQ, tcpSendQ: _tcpSendQ, delegate: self, timeout: kTcpTimeout)
         udp = UdpManager(udpReceiveQ: _udpReceiveQ, udpRegisterQ: _udpRegisterQ, delegate: self)
     }
     
@@ -223,7 +226,6 @@ public final class Api {
     /// - Parameter params:     a struct of parameters
     /// - Returns:              success / failure
     public func connect(_ params: ConnectionParams) -> Bool {
-
         guard Discovery.sharedInstance.radios.count > params.index else {
             _log("Api, Invalid radios index: count = \(Discovery.sharedInstance.radios.count), index = \(params.index)", .error, #function, #file, #line)
             fatalError("Invalid radios index")
@@ -236,14 +238,12 @@ public final class Api {
         _params = params
         self.nsLogState = params.logState
 
-        // make the Radio the Api delegate
+        // make the Radio class the Api delegate
         apiDelegate = Discovery.sharedInstance.radios[params.index]
 
-        // attempt to connect to the Radio
+        // attempt to connect to the physical Radio
         if let packet = Discovery.sharedInstance.radios[params.index].packet {
             if tcp.connect(packet) {
-
-                // Connected, check the versions
                 checkVersion(packet)
 
                 self.isGui = (params.pendingDisconnect == .none ? isGui : false)
@@ -297,13 +297,6 @@ public final class Api {
             // a UDP port has been bound, inform observers
             NC.post(.udpDidBind, object: nil)
 
-//        case .clientConnected (let radio) where radio.packet.isWan:
-//            _log("Api client connected (WAN)", .debug, #function, #file, #line)
-//            // when connecting to a WAN radio, the public IP address of the connected
-//            // client must be obtained from the radio.
-//            // connectionCompletion is invoked when the reply is received
-//            send("client ip", replyTo: clientIpReplyHandler)
-
         case .clientConnected (let radio):
             _log("Api client connected (LOCAL)", .debug, #function, #file, #line)
 
@@ -343,7 +336,7 @@ public final class Api {
         apiDelegate = nil
 
         // stop pinging (if active)
-        _pinger?.stop()
+        _pinger?.stopPinging()
         _pinger = nil
 
         // the radio (if any) will be disconnected
@@ -352,6 +345,7 @@ public final class Api {
         // disconnect TCP
         tcp.disconnect()
 
+        // remove all of radio's objects
         activeRadio?.removeAllObjects()
 
         // remove the reference to the Radio
@@ -361,17 +355,11 @@ public final class Api {
         NC.post(.radioHasBeenDisconnected, object: name)
     }
 
-    /// Request a Client disconnection
+    /// Request the disconnection of another (local) Client (not this client)
     /// - Parameters:
-    ///   - packet:     the  packet of the radio
-    ///   - handle:     the handle
-    public func requestClientDisconnect(packet: DiscoveryPacket, handle: Handle) {
-        if packet.isWan {
-            // FIXME: Does this need to be a TLS send?
-            send("application disconnect_users serial" + "=\(packet.serialNumber)" )
-        } else {
-            send("client disconnect \(handle.hex)")
-        }
+    ///   - handle:         the handle
+    public func requestClientDisconnect(handle: Handle) {
+        send("client disconnect \(handle.hex)")
     }
 
     /// Send a command to the Radio (hardware)
@@ -465,11 +453,14 @@ public final class Api {
         // get the Radio Version
         let radioVersion = Version(packet.firmwareVersion)
         
-        if Api.kVersionSupported < radioVersion  {
-            _log("Api Radio may need to be downgraded: Radio version = \(radioVersion.longString), API supports version = \(Api.kVersionSupported.string)", .warning, #function, #file, #line)
-            NC.post(.radioDowngrade, object: (apiVersion: Api.kVersionSupported.string, radioVersion: radioVersion.string))
+        if kVersionSupported < radioVersion  {
+            _log("Api Radio may need to be downgraded: Radio version = \(radioVersion.longString), API supports version = \(kVersionSupported.string)", .warning, #function, #file, #line)
+            NC.post(.radioDowngrade, object: (apiVersion: kVersionSupported.string, radioVersion: radioVersion.string))
         }
     }
+
+    // ----------------------------------------------------------------------------
+    // MARK: - ReplyHandlers
 
     /// Reply handler for the "wan validate" command
     /// - Parameters:
@@ -481,27 +472,6 @@ public final class Api {
         // return status
         updateState(to: .wanHandleValidated(success: responseValue == Api.kNoError))
     }
-
-    /// Reply handler for the "client ip" command
-    /// - Parameters:
-    ///   - command:                a Command string
-    ///   - seqNum:                 the Command's sequence number
-    ///   - responseValue:          the response contained in the Reply to the Command
-    ///   - reply:                  the descriptive text contained in the Reply to the Command
-//    private func clientIpReplyHandler(_ command: String, seqNum: UInt, responseValue: String, reply: String) {
-//        if let radio = activeRadio {
-//            // was an error code returned?
-//            if responseValue == Api.kNoError {
-//                // NO, the reply value is the IP address
-//                connectionCompletion(to: radio)
-//
-//            } else {
-//                // YES, use the ip of the local interface
-//                _log("Api, client ip command returned an error: \(responseValue)", .error, #function, #file, #line)
-//                fatalError("Api, client ip command returned an error: \(responseValue)")
-//            }
-//        }
-//    }
 }
 
 // ----------------------------------------------------------------------------

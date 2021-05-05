@@ -8,8 +8,6 @@
 
 import Foundation
 
-public typealias BandId = ObjectId
-
 /// BandSetting Class implementation
 ///
 ///      creates a BandSetting instance to be used by a Client to support the
@@ -98,6 +96,9 @@ public final class BandSetting: ObservableObject {
         _api.send("interlock bandset \(id)  \(token.rawValue)=\(value)")
     }
  }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension BandSetting: DynamicModel {
     /// Parse a BandSetting status message

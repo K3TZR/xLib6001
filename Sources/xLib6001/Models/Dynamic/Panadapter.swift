@@ -10,8 +10,6 @@ import Foundation
 import CoreGraphics
 import simd
 
-public typealias PanadapterStreamId = StreamId
-
 /// Panadapter implementation
 ///
 ///       creates a Panadapter instance to be used by a Client to support the
@@ -221,6 +219,9 @@ public final class Panadapter: ObservableObject, Identifiable {
         _api.send("display panafall set " + "\(id.hex) " + tokenString + "=\(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModelWithStream extension
 
 extension Panadapter: DynamicModelWithStream {
     /// Parse a Panadapter status message

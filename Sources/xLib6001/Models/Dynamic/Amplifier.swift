@@ -8,8 +8,6 @@
 
 import Foundation
 
-public typealias AmplifierId = Handle
-
 /// Amplifier Class implementation
 ///
 ///       creates an Amplifier instance to be used by a Client to support the
@@ -135,6 +133,9 @@ public final class Amplifier: ObservableObject, Identifiable {
         _api.send("amplifier set " + "\(id.hex) " + token.rawValue + "=\(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension Amplifier: DynamicModel {
     /// Parse an Amplifier status message

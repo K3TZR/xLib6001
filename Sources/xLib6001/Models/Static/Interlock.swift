@@ -16,7 +16,7 @@ import Foundation
 ///
 public final class Interlock: ObservableObject {
     // ----------------------------------------------------------------------------
-    // MARK: - Public properties
+    // MARK: - Published properties
     
     @Published public var accTxEnabled = false {
         didSet { if !_suppress && accTxEnabled != oldValue { interlockCmd( .accTxEnabled, accTxEnabled.as1or0)  }}} //
@@ -54,7 +54,7 @@ public final class Interlock: ObservableObject {
         didSet { if !_suppress && tx3Delay != oldValue { interlockCmd( .tx3Delay, tx3Delay)  }}}
     
     // ----------------------------------------------------------------------------
-    // MARK: - Internal properties
+    // MARK: - Internal types
     
     enum InterlockTokens: String {
         case accTxEnabled       = "acc_tx_enabled"
@@ -121,6 +121,9 @@ public final class Interlock: ObservableObject {
         _api.send("interlock " + token.rawValue + "=\(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - StaticModel extension
 
 extension Interlock: StaticModel {
     /// Parse an Interlock status message

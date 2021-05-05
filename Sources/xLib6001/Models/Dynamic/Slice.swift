@@ -8,10 +8,6 @@
 
 import Foundation
 
-public typealias SliceId = ObjectId
-public typealias Hz = Int
-public typealias MHz = Double
-
 /// Slice Class implementation
 ///
 ///      creates a Slice instance to be used by a Client to support the
@@ -49,9 +45,9 @@ public final class Slice: ObservableObject , Identifiable {
     @Published public var postDemodLow: Int = 0
     @Published public var qskEnabled: Bool = false
     @Published public var recordLength: Float = 0
-    @Published public var rxAntList = [Radio.AntennaPort]()
+    @Published public var rxAntList = [AntennaPort]()
     @Published public var sliceLetter: String?
-    @Published public var txAntList = [Radio.AntennaPort]()
+    @Published public var txAntList = [AntennaPort]()
     @Published public var wide: Bool = false
 
     @Published public var active: Bool = false {
@@ -448,6 +444,9 @@ public final class Slice: ObservableObject , Identifiable {
         return newValue
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension Slice: DynamicModel {
     /// Parse a Slice status message

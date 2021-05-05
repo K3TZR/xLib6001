@@ -16,7 +16,16 @@ import Foundation
 ///
 public final class Atu: ObservableObject {
     // ----------------------------------------------------------------------------
-    // MARK: - Public properties
+    // MARK: - Published properties
+
+    @Published public var memoriesEnabled = false {
+        didSet { if !_suppress && memoriesEnabled != oldValue { atuSetCmd( .memoriesEnabled, memoriesEnabled.as1or0) }}}
+    @Published public var status = ""       // FIXME: ?????
+    @Published public var enabled = false
+    @Published public var usingMemory = false
+
+    // ----------------------------------------------------------------------------
+    // MARK: - Public types
     
     public enum Status: String {
         case none             = "NONE"
@@ -30,31 +39,9 @@ public final class Atu: ObservableObject {
         case tuneAborted      = "TUNE_ABORTED"
         case tuneManualBypass = "TUNE_MANUAL_BYPASS"    // Byp
     }
-    
-    @Published public var memoriesEnabled = false {
-        didSet { if !_suppress && memoriesEnabled != oldValue { atuSetCmd( .memoriesEnabled, memoriesEnabled.as1or0) }}}
-    @Published public var status = ""       // FIXME: ?????
-    @Published public var enabled = false
-    @Published public var usingMemory = false
-
-//    @objc dynamic public var status: String {
-//        var value = ""
-//        guard let token = Status(rawValue: _status) else { return "Unknown" }
-//        switch token {
-//        case .none, .tuneNotStarted:    value = ""
-//        case .tuneInProgress:           value = "Tuning"
-//        case .tuneBypass:               value = "Success Byp"
-//        case .tuneSuccessful:           value = "Success"
-//        case .tuneOK:                   value = "Success"
-//        case .tuneFailBypass:           value = "Fail Byp"
-//        case .tuneFail:                 value = "Fail"
-//        case .tuneAborted:              value = "Aborted"
-//        case .tuneManualBypass:         value = "Manual Byp"
-//        }
-//        return value }
 
     // ----------------------------------------------------------------------------
-    // MARK: - Internal properties
+    // MARK: - Internal types
 
     enum AtuTokens: String {
         case status
@@ -97,10 +84,10 @@ public final class Atu: ObservableObject {
     }
 }
 
+// ----------------------------------------------------------------------------
+// MARK: - StaticModel extension
+
 extension Atu: StaticModel {
-    // ------------------------------------------------------------------------------
-    // MARK: - Instance methods
-    
     /// Parse an Atu status message
     ///   Format: <"status", value> <"memories_enabled", 1|0> <"using_mem", 1|0>
     ///

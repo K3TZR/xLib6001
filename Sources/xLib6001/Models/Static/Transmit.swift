@@ -16,7 +16,7 @@ import Foundation
 ///
 public final class Transmit: ObservableObject {
     // ----------------------------------------------------------------------------
-    // MARK: - Public properties
+    // MARK: - Published properties
     
     @Published public var carrierLevel = 0 {
         didSet { if !_suppress && carrierLevel != oldValue { transmitCmd( "am_carrier", carrierLevel) }}}
@@ -107,7 +107,7 @@ public final class Transmit: ObservableObject {
         didSet { if !_suppress && voxLevel != oldValue { transmitCmd( .voxLevel, voxLevel) }}}
 
     // ----------------------------------------------------------------------------
-    // MARK: - Internal properties
+    // MARK: - Internal types
     
     enum TransmitTokens: String {
         case amCarrierLevel           = "am_carrier_level"              // "am_carrier"
@@ -207,16 +207,10 @@ public final class Transmit: ObservableObject {
     }
 }
 
+// ----------------------------------------------------------------------------
+// MARK: - StaticModel extension
+
 extension Transmit: StaticModel {
-    
-    // ------------------------------------------------------------------------------
-    // MARK: - Instance methods
-    
-    // format:
-    // tx_rf_power_changes_allowed=1 tune=0 show_tx_in_waterfall=0 mon_available=1 max_power_level=100transmit tx_rf_power_changes_allowed=1 tune=0 show_tx_in_waterfall=0 mon_available=1 max_power_level=100
-    //      OR
-    // freq=14.100000 rfpower=100 tunepower=10 tx_slice_mode=USB hwalc_enabled=0 inhibit=0 dax=0 sb_monitor=0 mon_gain_sb=75 mon_pan_sb=50 met_in_rx=0 am_carrier_level=100 mic_selection=MIC mic_level=40 mic_boost=1 mic_bias=0 mic_acc=0 compander=1 compander_level=70 vox_enable=0 vox_level=50 vox_delay=2075607040 speech_processor_enable=1 speech_processor_level=0 lo=100 hi=2900 tx_filter_changes_allowed=1 tx_antenna=ANT1 pitch=600 speed=30 iambic=1 iambic_mode=1 swap_paddles=0 break_in=1 break_in_delay=41 cwl_enabled=0 sidetone=1 mon_gain_cw=80 mon_pan_cw=50 synccwx=1transmit freq=14.100000 rfpower=100 tunepower=10 tx_slice_mode=USB hwalc_enabled=0 inhibit=0 dax=0 sb_monitor=0 mon_gain_sb=75 mon_pan_sb=50 met_in_rx=0 am_carrier_level=100 mic_selection=MIC mic_level=40 mic_boost=1 mic_bias=0 mic_acc=0 compander=1 compander_level=70 vox_enable=0 vox_level=50 vox_delay=2075607040 speech_processor_enable=1 speech_processor_level=0 lo=100 hi=2900 tx_filter_changes_allowed=1 tx_antenna=ANT1 pitch=600 speed=30 iambic=1 iambic_mode=1 swap_paddles=0 break_in=1 break_in_delay=41 cwl_enabled=0 sidetone=1 mon_gain_cw=80 mon_pan_cw=50 synccwx=1
-        
     /// Parse a Transmit status message
     ///   format: <key=value> <key=value> ...<key=value>
     ///

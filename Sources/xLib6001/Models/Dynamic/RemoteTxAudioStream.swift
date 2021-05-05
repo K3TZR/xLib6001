@@ -8,8 +8,6 @@
 
 import Foundation
 
-public typealias RemoteTxStreamId = StreamId
-
 /// RemoteTxAudioStream Class implementation
 ///
 ///      creates a RemoteTxAudioStream instance to be used by a Client to support the
@@ -116,6 +114,9 @@ public final class RemoteTxAudioStream: ObservableObject, Identifiable {
         NC.post(.remoteTxAudioStreamWillBeRemoved, object: self as Any?)
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension RemoteTxAudioStream: DynamicModel {
     /// Parse an RemoteTxAudioStream status message

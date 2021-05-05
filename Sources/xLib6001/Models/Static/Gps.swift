@@ -21,7 +21,7 @@ public final class Gps: ObservableObject {
     static let kGpsCmd = "radio gps "
 
     // ----------------------------------------------------------------------------
-    // MARK: - Public properties
+    // MARK: - Published properties
 
     @Published public var altitude = ""
     @Published public var frequencyError: Double = 0
@@ -36,7 +36,7 @@ public final class Gps: ObservableObject {
     @Published public var visible = false
 
     // ----------------------------------------------------------------------------
-    // MARK: - Internal properties
+    // MARK: - Internal types
 
     enum GpsTokens: String {
         case altitude
@@ -76,6 +76,9 @@ public final class Gps: ObservableObject {
         Api.sharedInstance.send(kGpsCmd + "uninstall", replyTo: callback)
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - StaticModel extension
 
 extension Gps: StaticModel {
     /// Parse a Gps status message

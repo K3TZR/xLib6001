@@ -12,57 +12,13 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - Amplifier methods
     
-    /// Create an Amplifier record
-    ///
-    /// - Parameters:
-    ///   - ip:             Ip Address (dotted-decimal STring)
-    ///   - port:           Port number
-    ///   - model:          Model
-    ///   - serialNumber:   Serial number
-    ///   - antennaPairs:   antenna pairs
-    ///   - callback:       ReplyHandler (optional)
-    ///
     public func requestAmplifier(ip: String, port: Int, model: String, serialNumber: String, antennaPairs: String, callback: ReplyHandler? = nil) {
         // TODO: add code
     }
-    
-    // ----------------------------------------------------------------------------
-    // MARK: - AudioStream methods
-    
-//    /// Create an Audio Stream
-//    ///
-//    /// - Parameters:
-//    ///   - channel:            DAX channel number
-//    ///   - callback:           ReplyHandler (optional)
-//    /// - Returns:              Success / Failure
-//    ///
-//    public func requestAudioStream(_ channel: String, callback: ReplyHandler? = nil) {
-//        // tell the Radio to create a Stream
-//        _api.send("stream create " + "dax" + "=\(channel)", replyTo: callback)
-//    }
-//    /// Find an AudioStream by DAX Channel
-//    ///
-//    /// - Parameter channel:    Dax channel number
-//    /// - Returns:              an AudioStream (if any)
-//    ///
-//    public func findAudioStream(with channel: Int) -> AudioStream? {
-//        // find the AudioStream with the specified Channel (if any)
-//        let streams = audioStreams.values.filter { $0.daxChannel == channel }
-//        guard streams.count >= 1 else { return nil }
-//        
-//        // return the first one
-//        return streams[0]
-//    }
-    
+
     // ----------------------------------------------------------------------------
     // MARK: - BandSetting methods
     
-    /// Create an Audio Stream
-    ///
-    /// - Parameters:
-    ///   - callback:           ReplyHandler (optional)
-    /// - Returns:              Success / Failure
-    ///
     public func requestBandSetting(_ channel: String, callback: ReplyHandler? = nil) {
         // FIXME: need information
     }
@@ -104,22 +60,11 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - DaxIqStream methods
     
-    /// Create a DaxIQStream
-    ///
-    /// - Parameters:
-    ///   - channel:            DAX channel number
-    ///   - callback:           ReplyHandler (optional)
-    ///
     public func requestDaxIqStream(_ channel: String, callback: ReplyHandler? = nil) {
         // tell the Radio to create the Stream
         _api.send("stream create type=dax_iq daxiq_channel=\(channel)", replyTo: callback)
     }
-    /// Find the IQ Stream for a DaxIqChannel
-    ///
-    /// - Parameters:
-    ///   - daxIqChannel:   a Dax IQ channel number
-    /// - Returns:          an IQ Stream reference (or nil)
-    ///
+
     public func findDaxIqStream(using channel: Int) -> DaxIqStream? {
         // find the IQ Streams with the specified Channel (if any)
         let selectedStreams = daxIqStreams.values.filter { $0.channel == channel }
@@ -132,10 +77,6 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - DaxMicAudioStream methods
     
-    /// Create a DaxMicAudioStream
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
     public func requestDaxMicAudioStream(callback: ReplyHandler? = nil) {
         // tell the Radio to create a Stream
         _api.send("stream create type=dax_mic", replyTo: callback)
@@ -144,21 +85,11 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - DaxRxAudioStream methods
     
-    /// Create a DaxRxAudioStream
-    ///
-    /// - Parameters:
-    ///   - channel:            DAX channel number
-    ///   - callback:           ReplyHandler (optional)
-    ///
     public func requestDaxRxAudioStream(_ channel: String, callback: ReplyHandler? = nil) {
         // tell the Radio to create a Stream
         _api.send("stream create type=dax_rx dax_channel=\(channel)", replyTo: callback)
     }
-    /// Find a DaxRxAudioStream by DAX Channel
-    ///
-    /// - Parameter channel:    Dax channel number
-    /// - Returns:              a DaxRxAudioStream (if any)
-    ///
+
     public func findDaxRxAudioStream(with channel: Int) -> DaxRxAudioStream? {
         // find the DaxRxAudioStream with the specified Channel (if any)
         let streams = daxRxAudioStreams.values.filter { $0.daxChannel == channel }
@@ -171,10 +102,6 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - DaxTxAudioStream methods
     
-    /// Create a DaxTxAudioStream
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
     public func requestDaxTxAudioStream(callback: ReplyHandler? = nil) {
         // tell the Radio to create a Stream
         _api.send("stream create type=dax_tx", replyTo: callback)
@@ -182,13 +109,7 @@ extension Radio {
     
     // ----------------------------------------------------------------------------
     // MARK: - Equalizer methods
-    
-    /// Return a list of Equalizer values
-    ///
-    /// - Parameters:
-    ///   - eqType:             Equalizer type raw value of the enum)
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestEqualizerInfo(_ eqType: String, callback:  ReplyHandler? = nil) {
         // ask the Radio for the selected Equalizer settings
         _api.send("eq " + eqType + " info", replyTo: callback)
@@ -197,12 +118,6 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - Binding to gui clients methods
     
-    /// Binds non-gui client (user of the API) to gui client
-    ///
-    /// - Parameters:
-    ///   - clientId:           GUI client ID (UUID as string)
-    ///   - callback:           ReplyHandler (optional)
-    ///
     public func bindGuiClient(_ clientId: String, callback:  ReplyHandler? = nil) {
         guard Api.sharedInstance.isGui == false && clientId != "" else { return }
         
@@ -211,62 +126,13 @@ extension Radio {
     }
     
     // ----------------------------------------------------------------------------
-    // MARK: - IQ Stream methods
-    
-//    /// Create an IQ Stream
-//    ///
-//    /// - Parameters:
-//    ///   - channel:            DAX channel number
-//    ///   - callback:           ReplyHandler (optional)
-//    ///
-//    public func requestIqStream(_ channel: String, callback: ReplyHandler? = nil) {
-//        _api.send("stream create " + "daxiq" + "=\(channel)", replyTo: callback)
-//    }
-//    /// Create an IQ Stream
-//    ///
-//    /// - Parameters:
-//    ///   - channel:            DAX channel number
-//    ///   - ip:                 ip address
-//    ///   - port:               port number
-//    ///   - callback:           ReplyHandler (optional)
-//    ///
-//    public func requestIqStream(_ channel: String, ip: String, port: Int, callback: ReplyHandler? = nil) {
-//        _api.send("stream create " + "daxiq" + "=\(channel) " + "ip" + "=\(ip) " + "port" + "=\(port)", replyTo: callback)
-//    }
-//    /// Find the IQ Stream for a DaxIqChannel
-//    ///
-//    /// - Parameters:
-//    ///   - daxIqChannel:   a Dax IQ channel number
-//    /// - Returns:          an IQ Stream reference (or nil)
-//    ///
-//    public func findIqStream(using channel: Int) -> IqStream? {
-//        // find the IQ Streams with the specified Channel (if any)
-//        let selectedStreams = iqStreams.values.filter { $0.daxIqChannel == channel }
-//        guard selectedStreams.count >= 1 else { return nil }
-//        
-//        // return the first one
-//        return selectedStreams[0]
-//    }
-    
-    // ----------------------------------------------------------------------------
     // MARK: - Meter methods
     
-    /// Find Meters by a Slice Id
-    ///
-    /// - Parameters:
-    ///   - sliceId:    a Slice id
-    /// - Returns:      an array of Meters
-    ///
     public func findMeters(on sliceId: SliceId) -> [Meter] {
         // find the Meters on the specified Slice (if any)
         return meters.values.filter { $0.source == "slc" && $0.group.objectId == sliceId }
     }
-    /// Find a Meter by its ShortName
-    ///
-    /// - Parameters:
-    ///   - name:       Short Name of a Meter
-    /// - Returns:      a Meter reference
-    ///
+
     public func findMeter(shortName name: MeterName) -> Meter? {
         // find the Meters with the specified Name (if any)
         let selectedMeters = meters.values.filter { $0.name == name }
@@ -275,24 +141,17 @@ extension Radio {
         // return the first one
         return selectedMeters[0]
     }
-    /// Subscribe to a meter
-    /// - Parameter id:       the meter id
-    ///
+
     public func subscribeMeter(id: MeterId) {
         // subscribe to the specified Meter
         _api.send("sub meter \(id)")
     }
-    /// Unsubscribe to a meter
-    /// - Parameter id:       the meter id
-    ///
+
     public func unSubscribeMeter(id: MeterId) {
         // unsubscribe from the specified Meter
         _api.send("unsub meter \(id)")
     }
-    /// Request a list of Meters
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
     public func requestMeterList(callback: ReplyHandler? = nil) {
         // ask the Radio for a list of Meters
         _api.send("meter list", replyTo: callback)
@@ -301,61 +160,21 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - Memory methods
     
-    /// Create a Memory
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
     public func requestMemory(callback: ReplyHandler? = nil) {
         // tell the Radio to create a Memory
         _api.send("memory create", replyTo: callback)
     }
-    
-    // ----------------------------------------------------------------------------
-    // MARK: - MicAudioStream methods
-    
-    /// Create a Mic Audio Stream
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    /// - Returns:              Success / Failure
-    ///
-    public func requestMicAudioStream(callback: ReplyHandler? = nil) {
-        // tell the Radio to create a Stream
-        _api.send("stream create daxmic", replyTo: callback)
-    }
-    
-    // ----------------------------------------------------------------------------
-    // MARK: - Opus methods
-    
-    /// Turn Opus Rx On/Off
-    ///
-    /// - Parameters:
-    ///   - value:              Start / Stop
-    ///   - callback:           ReplyHandler (optional)
-    ///
-    public func startStopOpusRxAudioStream(state: Bool, callback: ReplyHandler? = nil) {
-        // tell the Radio to enable Opus Rx
-        Api.sharedInstance.send("remote_audio rx_on \(state.as1or0)", replyTo: callback)
-    }
-    
+
     // ----------------------------------------------------------------------------
     // MARK: - Panadapter methods
     
-    /// Create a Panafall
-    ///
-    /// - Parameters:
-    ///   - dimensions:         Panafall dimensions
-    ///   - callback:           ReplyHandler (optional)
-    ///
     public func requestPanadapter(_ dimensions: CGSize = CGSize(width: 100, height: 100), callback: ReplyHandler? = nil) {
         // tell the Radio to create a Panafall (if any available)
         if availablePanadapters > 0 {
             _api.send("display panafall create x=\(dimensions.width) y=\(dimensions.height)", replyTo: callback)
         }
     }
-    /// Find the active Panadapter
-    ///
-    /// - Returns:      a reference to a Panadapter (or nil)
-    ///
+
     public func findActivePanadapter() -> Panadapter? {
         // find the Panadapters with an active Slice (if any)
         let selectedPanadapters = panadapters.values.filter { findActiveSlice(on: $0.id) != nil }
@@ -364,12 +183,7 @@ extension Radio {
         // return the first one
         return selectedPanadapters[0]
     }
-    /// Find the Panadapter for a DaxIqChannel
-    ///
-    /// - Parameters:
-    ///   - daxIqChannel:   a Dax channel number
-    /// - Returns:          a Panadapter id (or nil)
-    ///
+
     public func findPanadapterId(using channel: Int) -> PanadapterStreamId? {
         // find the Panadapters with the specified Channel (if any)
         for (id, panadapter) in panadapters where panadapter.daxIqChannel == channel {
@@ -383,10 +197,6 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - Radio methods
     
-    /// Request all subscriptions
-    ///
-    /// - Parameter callback: ReplyHandler (optional)
-    ///
     public func requestSubAll(callback: ReplyHandler? = nil) {
         _api.send("sub tx all")
         _api.send("sub atu all")
@@ -403,160 +213,90 @@ extension Radio {
         _api.send("sub dax all")
         _api.send("sub usb_cable all")
         _api.send("sub tnf all")
-        
-//        if version.isNewApi { _api.send("sub client all") }
         _api.send("sub client all")
         //      send("sub spot all")    // TODO:
     }
-    /// Request MTU limit
-    /// - Parameters:
-    ///   - size:         MTU size
-    ///   - callback:     ReplyHandler (optional)
-    ///
+
     public func requestMtuLimit(_ size: Int, callback: ReplyHandler? = nil) {
         _api.send("client set enforce_network_mtu=1 network_mtu=\(size)")
     }
-    /// Request limited Dax bandwidth
-    /// - Parameters:
-    ///   - size:         MTU size
-    ///   - callback:     ReplyHandler (optional)
-    ///
+
     public func requestLowBandwidthDax(_ enable: Bool, callback: ReplyHandler? = nil) {
         _api.send("client set send_reduced_bw_dax=\(enable.as1or0)")
     }
-    /// Request a List of Antenna sources
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
     public func requestAntennaList(callback: ReplyHandler? = nil) {
         _api.send("ant list", replyTo: callback == nil ? defaultReplyHandler : callback)
     }
-    /// Key CW
-    ///
-    /// - Parameters:
-    ///   - state:              Key Up = 0, Key Down = 1
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestCwKeyImmediate(state: Bool, callback: ReplyHandler? = nil) {
         _api.send("cw key immediate" + " \(state.as1or0)", replyTo: callback)
     }
-    /// Request Radio information
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
     public func requestInfo(callback: ReplyHandler? = nil) {
         _api.send("info", replyTo: callback == nil ? defaultReplyHandler : callback)
     }
-    /// Refresh the Radio License
-    ///
-    /// - Parameters:
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestLicense(callback: ReplyHandler? = nil) {
         return _api.send("license refresh", replyTo: callback)
     }
-    /// Identify a low Bandwidth connection
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
     public func requestLowBandwidthConnect(callback: ReplyHandler? = nil) {
         _api.send("client low_bw_connect", replyTo: callback)
     }
-    /// Request a List of Mic sources
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
+
     public func requestMicList(callback: ReplyHandler? = nil) {
         _api.send("mic list", replyTo: callback == nil ? defaultReplyHandler : callback)
     }
-    /// Turn off persistence
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
     public func requestPersistenceOff(callback: ReplyHandler? = nil) {
         _api.send("client program start_persistence off", replyTo: callback)
     }
-    /// Request a Display Profile
-    /// - Parameters:
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestDisplayProfile(callback: ReplyHandler? = nil) {
         _api.send("profile display info", replyTo: callback)
     }
-    /// Request a Global Profile
-    /// - Parameters:
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestGlobalProfile(callback: ReplyHandler? = nil) {
         _api.send("profile global info", replyTo: callback)
     }
-    /// Request a Mic Profile
-    /// - Parameters:
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestMicProfile(callback: ReplyHandler? = nil) {
         _api.send("profile mic info", replyTo: callback)
     }
-    /// Request a Tx Profile
-    /// - Parameters:
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestTxProfile(callback: ReplyHandler? = nil) {
         _api.send("profile tx info", replyTo: callback)
     }
-    /// Reboot the Radio
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
     public func requestReboot(callback: ReplyHandler? = nil) {
         _api.send("radio reboot", replyTo: callback)
     }
-    /// Request the elapsed uptime
-    ///
+
     public func requestUptime(callback: ReplyHandler? = nil) {
         _api.send("radio uptime", replyTo: callback == nil ? defaultReplyHandler : callback)
     }
-    /// Request Version information
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
     public func requestVersion(callback: ReplyHandler? = nil) {
         _api.send("version", replyTo: callback == nil ? defaultReplyHandler : callback)
     }
-    /// Reset the Static Net Params
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
     public func staticNetParamsReset(callback: ReplyHandler? = nil) {
         _api.send("radio static_net_params" + " reset", replyTo: callback)
     }
-    /// Set Static Network properties on the Radio
-    ///
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
+
     public func staticNetParamsSet(callback: ReplyHandler? = nil) {
-        _api.send("radio static_net_params" + " " + RadioStaticNet.ip.rawValue + "=\(staticIp) " + RadioStaticNet.gateway.rawValue + "=\(staticGateway) " + RadioStaticNet.netmask.rawValue + "=\(staticNetmask)")
+        _api.send("radio static_net_params" + " " + StaticNetTokens.ip.rawValue + "=\(staticIp) " + StaticNetTokens.gateway.rawValue + "=\(staticGateway) " + StaticNetTokens.netmask.rawValue + "=\(staticNetmask)")
     }
     
     // ----------------------------------------------------------------------------
     // MARK: - Slice methods
-    
-    /// Create a new Slice on a new Panadapter
-    ///
-    /// - Parameters:
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestSlice(callback: ReplyHandler? = nil) {
         _api.send("slice create", replyTo: callback)
     }
-    /// Create a new Slice
-    ///
-    /// - Parameters:
-    ///   - frequency:          frequenct (Hz)
-    ///   - antenna:            selected antenna
-    ///   - mode:               selected mode
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestSlice(id: PanadapterStreamId = 0, mode: String = "", frequency: Hz = 0,  rxAntenna: String = "", usePersistence: Bool = false, callback: ReplyHandler? = nil) {
         if availableSlices > 0 {
             
@@ -571,32 +311,20 @@ extension Radio {
             _api.send(cmd, replyTo: callback)
         }
     }
-    /// Create a new Slice
-    ///
-    /// - Parameters:
-    ///   - panadapter:         selected panadapter
-    ///   - frequency:          frequency (Hz)
-    ///   - callback:           ReplyHandler (optional)
-    ///
+
     public func requestSlice(panadapter: Panadapter, frequency: Hz = 0, callback: ReplyHandler? = nil) {
         if availableSlices > 0 {
             _api.send("slice create " + "pan" + "=\(panadapter.id.hex) \(frequency == 0 ? "" : "freq" + "=\(frequency.hzToMhz)")", replyTo: callback)
         }
     }
-    /// Disable all TxEnabled
-    ///
+
     public func disableSliceTx() {
         // for all Slices, turn off txEnabled
         for (_, slice) in slices where slice.txEnabled {
             slice.txEnabled = false
         }
     }
-    /// Return references to all Slices on the specified Panadapter
-    ///
-    /// - Parameters:
-    ///   - pan:        a Panadapter Id
-    /// - Returns:      an array of Slices (may be empty)
-    ///
+
     public func findAllSlices(on id: PanadapterStreamId) -> [xLib6001.Slice]? {
         // find the Slices on the Panadapter (if any)
         let filteredSlices = slices.values.filter { $0.panadapterId == id }
@@ -604,14 +332,7 @@ extension Radio {
         
         return filteredSlices
     }
-    /// Given a Frequency, return the Slice on the specified Panadapter containing it (if any)
-    ///
-    /// - Parameters:
-    ///   - id:         a Panadapter Stream Id
-    ///   - freq:       a Frequency (in hz)
-    ///   - width:      frequency width
-    /// - Returns:      a reference to a Slice (or nil)
-    ///
+
     public func findSlice(on id: PanadapterStreamId, at freq: Hz, width: Int) -> xLib6001.Slice? {
         // find the Slices on the Panadapter (if any)
         if let filteredSlices = findAllSlices(on: id) {
@@ -626,10 +347,7 @@ extension Radio {
             return nil
         }
     }
-    /// Return the Active Slice (if any)
-    ///
-    /// - Returns:      a Slice reference (or nil)
-    ///
+
     public func findActiveSlice() -> xLib6001.Slice? {
         // find the active Slices (if any)
         let filteredSlices = slices.values.filter { $0.active }
@@ -638,12 +356,7 @@ extension Radio {
         // return the first one
         return filteredSlices[0]
     }
-    /// Return the Active Slice on the specified Panadapter (if any)
-    ///
-    /// - Parameters:
-    ///   - id:         a Panadapter Stream Id
-    /// - Returns:      a Slice reference (or nil)
-    ///
+
     public func findActiveSlice(on id: PanadapterStreamId) -> xLib6001.Slice? {
         // find the active Slices on the specified Panadapter (if any)
         let filteredSlices = slices.values.filter { $0.active && $0.panadapterId == id }
@@ -652,12 +365,7 @@ extension Radio {
         // return the first one
         return filteredSlices[0]
     }
-    /// Return the first Slice on the specified Panadapter (if any)
-    ///
-    /// - Parameters:
-    ///   - id:         a Panadapter Stream Id
-    /// - Returns:      a Slice reference (or nil)
-    ///
+
     public func findFirstSlice(on id: PanadapterStreamId) -> xLib6001.Slice? {
         // find the Slices on the specified Panadapter (if any)
         let filteredSlices = slices.values.filter { $0.panadapterId == id }
@@ -666,11 +374,7 @@ extension Radio {
         // return the first one
         return filteredSlices[0]
     }
-    /// Find a Slice by DAX Channel
-    ///
-    /// - Parameter channel:    Dax channel number
-    /// - Returns:              a Slice (if any)
-    ///
+
     public func findSlice(using channel: Int) -> xLib6001.Slice? {
         // find the Slices with the specified Channel (if any)
         let filteredSlices = slices.values.filter { $0.daxChannel == channel }
@@ -679,13 +383,7 @@ extension Radio {
         // return the first one
         return filteredSlices[0]
     }
-    /// Find a Slice by Slice letter
-    ///
-    /// - Parameter
-    ///   - letter:                                 slice letter
-    ///   - guiClientHandle:                the handle for the GUI client the slice belongs to
-    /// - Returns:             a Slice (if any)
-    ///
+
     public func findSlice(letter: String, guiClientHandle: Handle) -> xLib6001.Slice? {
         // find the Slices with the specified Channel (if any)
         let filteredSlices = slices.values.filter { $0.sliceLetter == letter && $0.clientHandle == guiClientHandle }
@@ -694,12 +392,7 @@ extension Radio {
         // return the first one
         return filteredSlices[0]
     }
-    /// Get the transmit slice for a GUI client
-    ///
-    /// - Parameter
-    ///   - guiClientHandle:                the handle for the GUI client the slice belongs to
-    /// - Returns:             a Slice (if any)
-    ///
+
     public func getTransmitSliceForHandle(_ guiClientHandle: Handle) -> xLib6001.Slice? {
         // find the Slices with the specified Channel (if any)
         let filteredSlices = slices.values.filter { $0.txEnabled && $0.clientHandle == guiClientHandle }
@@ -708,12 +401,7 @@ extension Radio {
         // return the first one
         return filteredSlices[0]
     }
-    /// Get the transmit slice for a GUI client
-    ///
-    /// - Parameter
-    ///   - guiClientId:                        the ID (UUID) for the GUI client the slice belongs to
-    /// - Returns:             a Slice (if any)
-    ///
+
     public func getTransmitSliceForClientId(_ guiClientId: String) -> xLib6001.Slice? {
         // find the GUI client for the ID
         if let handle = findHandle(for: guiClientId) {
@@ -730,11 +418,6 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: -  GuiClient methods
     
-    /// Find a GuiClient handle by Client Id
-    /// - Parameters:
-    ///   - clientId:           a Client Id
-    /// - Returns:              a Handle or nil
-    ///
     public func findHandle(for clientId: String?) -> Handle? {
         guard clientId != nil else { return nil }
         
@@ -743,11 +426,7 @@ extension Radio {
         }
         return nil
     }
-    /// Find a ClientId  by Station
-    /// - Parameters:
-    ///   - station:            a Station
-    /// - Returns:              a ClientId or nil
-    ///
+
     public func findClientId(for station: String) -> String? {
         for client in guiClients {
             if client.station == station { return client.clientId }
@@ -758,19 +437,10 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: -  RemoteRxAudioStream methods
     
-    /// Request a RemoteRxAudioStream
-    ///
-    /// - Parameters:
-    ///   - compression:        "opus"|"none""
-    ///   - callback:           ReplyHandler (optional)
-    /// - Returns:              success / failure
-    ///
     public func requestRemoteRxAudioStream(compression: String = RemoteRxAudioStream.Compression.opus.rawValue, callback: ReplyHandler? = nil) {
         _api.send("stream create type=remote_audio_rx compression=\(compression)", replyTo: callback)
     }
     
-    /// Remove the RemoteRxAudioStream
-    ///
     public func removeRemoteRxAudioStream() {
         for (_, stream) in remoteRxAudioStreams where stream.clientHandle == Api.sharedInstance.connectionHandle! {
             stream.remove()
@@ -780,16 +450,10 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: -  RemoteTxAudioStream methods
     
-    /// Request a RemoteTxAudioStream
-    /// - Parameters:
-    ///   - callback:           ReplyHandler (optional)
-    ///
     public func requestRemoteTxAudioStream(callback: ReplyHandler? = nil) {
         _api.send("stream create type=remote_audio_tx", replyTo: callback)
     }
     
-    /// Remove the RemoteTxAudioStream
-    ///
     public func removeRemoteTxAudioStream() {
         for (_, stream) in remoteTxAudioStreams where stream.clientHandle == Api.sharedInstance.connectionHandle! {
             stream.remove()
@@ -799,21 +463,10 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - Tnf methods
     
-    /// Request a Tnf
-    /// - Parameters:
-    ///   - frequency:          frequency (Hz)
-    ///   - callback:           ReplyHandler (optional)
-    ///
     public func requestTnf(at frequency: Hz, callback: ReplyHandler? = nil) {
         _api.send("tnf create " + "freq" + "=\(frequency.hzToMhz)", replyTo: callback)
     }
-    
-    /// Given a Frequency, return a reference to the Tnf containing it (if any)
-    /// - Parameters:
-    ///   - frequency:      a Frequency (hz)
-    ///   - minWidth:       bandwidth (hz)
-    /// - Returns:          a Tnf reference (or nil)
-    ///
+
     public func findTnf(at freq: Hz, minWidth: Hz) -> Tnf? {
         // return the Tnfs within the specified Frequency / minimum width (if any)
         let filteredTnfs = tnfs.values.filter { freq >= ($0.frequency - Hz(max(minWidth, $0.width/2))) && freq <= ($0.frequency + Hz(max(minWidth, $0.width/2))) }
@@ -822,26 +475,10 @@ extension Radio {
         // return the first one
         return filteredTnfs[0]
     }
-    
-    // ----------------------------------------------------------------------------
-    // MARK: - TxAudioStream methods
-    
-    /// Request a Tx Audio Stream
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
-    public func requestTxAudioStream(callback: ReplyHandler? = nil) {
-        _api.send("stream create daxtx", replyTo: callback)
-    }
-    
+
     // ----------------------------------------------------------------------------
     // MARK: - WanServer methods
     
-    /// Setup SmartLink ports
-    /// - Parameters:
-    ///   - tcpPort:                  public Tls port
-    ///   - udpPort:                  public Udp port
-    ///   - callback:                 ReplyHandler (optional)
-    ///
     public func smartlinkConfigure(tcpPort: Int, udpPort: Int, callback: ReplyHandler? = nil) {
         _api.send("wan set " + "public_tls_port" + "=\(tcpPort)" + " public_udp_port" + "=\(udpPort)", replyTo: callback)
     }
@@ -849,9 +486,6 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - Xvtr methods
     
-    /// Create an Xvtr
-    /// - Parameter callback:   ReplyHandler (optional)
-    ///
     public func requestXvtr(callback: ReplyHandler? = nil) {
         _api.send("xvtr create" , replyTo: callback)
     }

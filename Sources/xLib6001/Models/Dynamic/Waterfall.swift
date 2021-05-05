@@ -9,8 +9,6 @@
 import Foundation
 import CoreGraphics
 
-public typealias WaterfallStreamId = StreamId
-
 /// Waterfall Class implementation
 ///
 ///       creates a Waterfall instance to be used by a Client to support the
@@ -113,6 +111,9 @@ public final class Waterfall: ObservableObject, Identifiable {
         _api.send("display panafall set " + "\(id.hex) " + token.rawValue + "=\(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension Waterfall: DynamicModelWithStream {
     /// Parse a Waterfall status message

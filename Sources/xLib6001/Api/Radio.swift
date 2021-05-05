@@ -8,20 +8,11 @@
 
 import Foundation
 
-//// Radio Class implementation
-///
-///      as the object analog to the Radio (hardware), manages the use of all of
-///      the other model objects
-///
+/// Radio Class implementation
+///      The Radio class is the object analog to the Radio hardware
+///      It manages the use of all of the other model objects when
+///      connected to the Radio hardware by the Api class
 public final class Radio: ObservableObject {
-    // --------------------------------------------------------------------------------
-    // Aliases
-    
-    public typealias AntennaPort    = String
-    public typealias FilterMode     = String
-    public typealias MicrophonePort = String
-    public typealias RfGainValue    = String
-    
     // ----------------------------------------------------------------------------
     // MARK: - Published properties
     
@@ -178,18 +169,25 @@ public final class Radio: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
 
+    public private(set) var radioType: RadioTypes? = .flex6700
     public var replyHandlers : [SequenceNumber: ReplyTuple] {
         get { Api.objectQ.sync { _replyHandlers } }
         set { Api.objectQ.sync(flags: .barrier) { _replyHandlers = newValue }}}
-    private var _replyHandlers          = [SequenceNumber: ReplyTuple]()
-    public               let version: Version
-    public private(set)  var sliceErrors = [String]()  // milliHz
-    public private(set)  var uptime = 0
-    public private(set)  var radioType: RadioTypes? = .flex6700
+    public private(set) var sliceErrors = [String]()  // milliHz
+    public private(set) var uptime = 0
+    public let version: Version
 
     // ----------------------------------------------------------------------------
     // MARK: - Public types
 
+    public struct FilterSpec {
+        var filterHigh: Int
+        var filterLow: Int
+        var label: String
+        var mode: String
+        var txFilterHigh: Int
+        var txFilterLow: Int
+    }
     public enum RadioTypes : String {
         case flex6300   = "flex-6300"
         case flex6400   = "flex-6400"
@@ -199,14 +197,6 @@ public final class Radio: ObservableObject {
         case flex6600m  = "flex-6600m"
         case flex6700   = "flex-6700"
     }
-    public struct FilterSpec {
-        var filterHigh: Int
-        var filterLow: Int
-        var label: String
-        var mode: String
-        var txFilterHigh: Int
-        var txFilterLow: Int
-    }
     public struct TxFilter {
         var high = 0
         var low  = 0
@@ -215,13 +205,16 @@ public final class Radio: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Internal types
 
-    enum ClientTokens: String {
-        case host
-        case id                       = "client_id"
-        case ip
+    enum ConnectionTokens: String {
+        case clientId                 = "client_id"
         case localPttEnabled          = "local_ptt"
         case program
         case station
+    }
+    enum DisconnectionTokens: String {
+        case duplicateClientId        = "duplicate_client_id"
+        case forced
+        case wanValidationFailed      = "wan_validation_failed"
     }
     enum DisplayTokens: String {
         case panadapter               = "pan"
@@ -231,6 +224,13 @@ public final class Radio: ObservableObject {
         case gain
         case mode
         case qFactor
+    }
+    enum FilterSharpnessTokens: String {
+        case cw
+        case digital
+        case voice
+        case autoLevel                = "auto_level"
+        case level
     }
     enum InfoTokens: String {
         case atuPresent               = "atu_present"
@@ -251,6 +251,19 @@ public final class Radio: ObservableObject {
         case region
         case screensaver
         case softwareVersion          = "software_ver"
+    }
+    enum OscillatorTokens: String {
+        case extPresent               = "ext_present"
+        case gpsdoPresent             = "gpsdo_present"
+        case locked
+        case setting
+        case state
+        case tcxoPresent              = "tcxo_present"
+    }
+    enum RadioSubTokens: String {
+        case filterSharpness          = "filter_sharpness"
+        case staticNetParams          = "static_net_params"
+        case oscillator
     }
     enum RadioTokens: String {
         case backlight
@@ -280,30 +293,10 @@ public final class Radio: ObservableObject {
         case snapTuneEnabled          = "snap_tune_enabled"
         case tnfsEnabled              = "tnf_enabled"
     }
-    enum RadioTokenTypes: String {
-        case filterSharpness  = "filter_sharpness"
-        case staticNetParams  = "static_net_params"
-        case oscillator
-    }
-    enum RadioFilterSharpness: String {
-        case cw
-        case digital
-        case voice
-        case autoLevel        = "auto_level"
-        case level
-    }
-    enum RadioStaticNet: String {
+    enum StaticNetTokens: String {
         case gateway
         case ip
         case netmask
-    }
-    enum RadioOscillator: String {
-        case extPresent       = "ext_present"
-        case gpsdoPresent     = "gpsdo_present"
-        case locked
-        case setting
-        case state
-        case tcxoPresent      = "tcxo_present"
     }
     enum StatusTokens: String {
         case amplifier
@@ -325,44 +318,27 @@ public final class Radio: ObservableObject {
         case tnf
         case transmit
         case turf
-        case usbCable         = "usb_cable"
+        case usbCable                 = "usb_cable"
         case wan
         case waveform
         case xvtr
     }
+    enum StreamTypeTokens: String {
+        case daxIq                    = "dax_iq"
+        case daxMic                   = "dax_mic"
+        case daxRx                    = "dax_rx"
+        case daxTx                    = "dax_tx"
+        case remoteRx                 = "remote_audio_rx"
+        case remoteTx                 = "remote_audio_tx"
+    }
     enum VersionTokens: String {
-        case fpgaMb           = "fpga-mb"
-        case psocMbPa100      = "psoc-mbpa100"
-        case psocMbTrx        = "psoc-mbtrx"
-        case smartSdrMB       = "smartsdr-mb"
-        case picDecpu         = "pic-decpu"
+        case fpgaMb                   = "fpga-mb"
+        case psocMbPa100              = "psoc-mbpa100"
+        case psocMbTrx                = "psoc-mbtrx"
+        case smartSdrMB               = "smartsdr-mb"
+        case picDecpu                 = "pic-decpu"
     }
-    enum ClientTokenV3Connection : String {
-        case clientId         = "client_id"
-        case localPttEnabled  = "local_ptt"
-        case program
-        case station
-    }
-    enum ClientTokenV3Disconnection : String {
-        case duplicateClientId     = "duplicate_client_id"
-        case forced
-        case wanValidationFailed   = "wan_validation_failed"
-    }
-    enum StreamTypeNew : String {
-        case daxIq            = "dax_iq"
-        case daxMic           = "dax_mic"
-        case daxRx            = "dax_rx"
-        case daxTx            = "dax_tx"
-        case remoteRx         = "remote_audio_rx"
-        case remoteTx         = "remote_audio_tx"
-    }
-    enum StreamTypeOld : String {
-        case audio
-        case iq               = "daxiq"
-        case micAudio
-        case txAudio
-    }
-    
+
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
     
@@ -372,15 +348,14 @@ public final class Radio: ObservableObject {
     private let _log = LogProxy.sharedInstance.libMessage
     private var _metersAreStreaming = false
     private var _radioInitialized = false
+    private var _replyHandlers = [SequenceNumber: ReplyTuple]()
     private let _streamQ = DispatchQueue(label: Api.kName + ".streamQ", qos: .userInteractive)
     private var _suppress = false
-
 
     // ----------------------------------------------------------------------------
     // MARK: - Initialization
     
     public init(_ packet: DiscoveryPacket) {
-        
         self.packet = packet
         version = Version(packet.firmwareVersion)
         
@@ -397,7 +372,7 @@ public final class Radio: ObservableObject {
         transmit = Transmit()
         waveform = Waveform()
         
-        // initialize Equalizers (use the newer "sc" type)
+        // initialize Equalizers
         equalizers[.rxsc] = Equalizer(Equalizer.EqType.rxsc.rawValue)
         equalizers[.txsc] = Equalizer(Equalizer.EqType.txsc.rawValue)
     }
@@ -408,8 +383,7 @@ public final class Radio: ObservableObject {
     /// Remove all Radio objects
     public func removeAllObjects() {
         
-        // ----- remove all objects -----
-        //      NOTE: order is important
+        // ----- remove all objects -----, NOTE: order is important
         
         // notify all observers, then remove
         daxRxAudioStreams.forEach( { NC.post(.daxRxAudioStreamWillBeRemoved, object: $0.value as Any?) } )
@@ -436,23 +410,21 @@ public final class Radio: ObservableObject {
         slices.forEach( { NC.post(.sliceWillBeRemoved, object: $0.value as Any?) } )
         slices.removeAll()
         
-        panadapters.forEach( {
-            
+        panadapters.forEach {
             let waterfallId = $0.value.waterfallId
             let waterfall = waterfalls[waterfallId]
             
             // notify all observers
             NC.post(.panadapterWillBeRemoved, object: $0.value as Any?)
-            
             NC.post(.waterfallWillBeRemoved, object: waterfall as Any?)
-        })
+        }
         panadapters.removeAll()
         waterfalls.removeAll()
         
-        profiles.forEach( {
+        profiles.forEach {
             NC.post(.profileWillBeRemoved, object: $0.value.list as Any?)
             $0.value.list.removeAll()
-        } )
+        }
         
         equalizers.removeAll()
         memories.removeAll()
@@ -463,11 +435,11 @@ public final class Radio: ObservableObject {
         xvtrs.removeAll()
 
         _suppress = true
-        nickname = ""
-        smartSdrMB = ""
-        psocMbtrxVersion = ""
-        psocMbPa100Version = ""
-        fpgaMbVersion = ""
+            nickname = ""
+            smartSdrMB = ""
+            psocMbtrxVersion = ""
+            psocMbPa100Version = ""
+            fpgaMbVersion = ""
         _suppress = false
 
         // clear lists
@@ -503,18 +475,26 @@ public final class Radio: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Private methods
     
-    private func parseV3Connection(properties: KeyValuesArray, handle: Handle) {
+    private func parseConnection(properties: KeyValuesArray, handle: Handle) {
         var clientId = ""
         var program = ""
         var station = ""
         var isLocalPtt = false
+
+        func guiClientWasEdited(_ handle: Handle, _ client: GuiClient) {
+            // log & notify if all essential properties are present
+            if client.handle != 0 && client.clientId != nil && client.program != "" && client.station != "" {
+                _log("Radio,     guiClient updated: \(client.handle.hex), \(client.station), \(packet.connectionString), \(client.program), \(client.clientId!)", .info, #function, #file, #line)
+                NC.post(.guiClientHasBeenUpdated, object: client as Any?)
+            }
+        }
 
         DispatchQueue.main.async { [self] in
             // parse remaining properties
             for property in properties.dropFirst(2) {
 
                 // check for unknown Keys
-                guard let token = ClientTokenV3Connection(rawValue: property.key) else {
+                guard let token = ConnectionTokens(rawValue: property.key) else {
                     // log it and ignore this Key
                     _log("Radio, unknown client token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue
@@ -556,15 +536,7 @@ public final class Radio: ObservableObject {
         }
     }
     
-    private func guiClientWasEdited(_ handle: Handle, _ client: GuiClient) {
-        // log & notify if all essential properties are present
-        if client.handle != 0 && client.clientId != nil && client.program != "" && client.station != "" {
-            _log("Radio,     guiClient updated: \(client.handle.hex), \(client.station), \(packet.connectionString), \(client.program), \(client.clientId!)", .info, #function, #file, #line)
-            NC.post(.guiClientHasBeenUpdated, object: client as Any?)
-        }
-    }
-    
-    private func parseV3Disconnection(properties: KeyValuesArray, handle: Handle) {
+    private func parseDisconnection(properties: KeyValuesArray, handle: Handle) {
         var reason = ""
 
         // is it me?
@@ -572,7 +544,7 @@ public final class Radio: ObservableObject {
             // parse remaining properties
             for property in properties.dropFirst(2) {
                 // check for unknown Keys
-                guard let token = ClientTokenV3Disconnection(rawValue: property.key) else {
+                guard let token = DisconnectionTokens(rawValue: property.key) else {
                     // log it and ignore this Key
                     _log("Radio, unknown client disconnection token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue
@@ -628,18 +600,14 @@ public final class Radio: ObservableObject {
         }
         // is there an Object expecting to be notified?
         if let replyTuple = replyHandlers[ components[0].uValue ] {
-            
             // YES, an Object is waiting for this reply, send the Command to the Handler on that Object
-            
             let command = replyTuple.command
             // was a Handler specified?
             if let handler = replyTuple.replyTo {
-                
                 // YES, call the Handler
                 handler(command, components[0].sequenceNumber, components[1], (components.count == 3) ? components[2] : "")
                 
             } else {
-                
                 // send it to the default reply handler
                 defaultReplyHandler(replyTuple.command, sequenceNumber: components[0].sequenceNumber, responseValue: components[1], reply: (components.count == 3) ? components[2] : "")
             }
@@ -647,7 +615,6 @@ public final class Radio: ObservableObject {
             replyHandlers[components[0].sequenceNumber] = nil
             
         } else {
-            
             // no Object is waiting for this reply, log it if it is a non-zero Reply (i.e a possible error)
             if components[1] != Api.kNoError {
                 _log("Radio, unhandled non-zero reply: c\(components[0]), r\(replySuffix), \(flexErrorString(errorCode: components[1]))", .warning, #function, #file, #line)
@@ -710,13 +677,10 @@ public final class Radio: ObservableObject {
         case .waveform:       waveform.parseProperties(remainder.keyValuesArray())
         case .xvtr:           Xvtr.parseStatus(self, remainder.keyValuesArray(), !remainder.contains(Api.kNotInUse))
         }
-        // check if we received a status message for our handle to see if our client is connected now
+        // is this status message the first for our handle?
         if !_clientInitialized && components[0].handle == _api.connectionHandle {
-
-            // YES
+            // YES, set the API state to finish the UDP initialization
             _clientInitialized = true
-
-            // set the API state to finish the UDP initialization
             _api.updateState(to: .clientConnected(radio: self))
         }
     }
@@ -732,11 +696,10 @@ public final class Radio: ObservableObject {
     private func parseClient(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // is there a valid handle"
         if let handle = properties[0].key.handle {
-            
             switch properties[1].key {
 
-            case Api.kConnected:        parseV3Connection(properties: properties, handle: handle)
-            case Api.kDisconnected:     parseV3Disconnection(properties: properties, handle: handle)
+            case Api.kConnected:        parseConnection(properties: properties, handle: handle)
+            case Api.kDisconnected:     parseDisconnection(properties: properties, handle: handle)
             default:                    break
             }
         }
@@ -766,8 +729,7 @@ public final class Radio: ObservableObject {
     /// - Parameters:
     ///   - keyValues:      a KeyValuesArray
     ///   - radio:          the current Radio class
-    ///   - queue:          a parse Queue for the object
-    ///   - inUse:          false = "to be deleted"
+    ///   - remainder:      the text of the status mesage
     private func parseStream(_ radio: Radio, _ remainder: String) {
         let properties = remainder.keyValuesArray()
         
@@ -776,7 +738,7 @@ public final class Radio: ObservableObject {
             // YES, is it a removal?
             if remainder.contains(Api.kRemoved) {
 
-                // New Api removal, find the stream & remove it
+                // removal, find the stream & remove it
                 if daxIqStreams[id] != nil          { DaxIqStream.parseStatus(self, properties, false)           ; return }
                 if daxMicAudioStreams[id] != nil    { DaxMicAudioStream.parseStatus(self, properties, false)     ; return }
                 if daxRxAudioStreams[id] != nil     { DaxRxAudioStream.parseStatus(self, properties, false)      ; return }
@@ -787,7 +749,7 @@ public final class Radio: ObservableObject {
 
             } else {
                 // NOT a removal, check for unknown Keys
-                guard let token = StreamTypeNew(rawValue: properties[1].value) else {
+                guard let token = StreamTypeTokens(rawValue: properties[1].value) else {
                     // log it and ignore the Key
                     _log("Radio, unknown Stream type: \(properties[1].value)", .warning, #function, #file, #line)
                     return
@@ -843,7 +805,7 @@ public final class Radio: ObservableObject {
         }
     }
 
-    /// Parse the Reply to an Info command, reply format: <key=value> <key=value> ...<key=value>
+    /// Parse the Reply to an Info command
     ///   executed on the parseQ
     ///
     /// - Parameters:
@@ -887,11 +849,11 @@ public final class Radio: ObservableObject {
         }
     }
 
-    /// Parse the Reply to a Client Gui command, reply format: <key=value> <key=value> ...<key=value>
+    /// Parse the Reply to a Client Gui command,
     ///   executed on the parseQ
     ///
     /// - Parameters:
-    ///   - keyValues:          a KeyValuesArray
+    ///   - properties:          a KeyValuesArray
     private func parseGuiReply(_ properties: KeyValuesArray) {
         DispatchQueue.main.async { [self] in
             _suppress = true
@@ -906,34 +868,17 @@ public final class Radio: ObservableObject {
         }
     }
 
-    /// Parse the Reply to a Client Ip command, reply format: <key=value> <key=value> ...<key=value>
-    ///   executed on the parseQ
-    ///
-    /// - Parameters:
-    ///   - keyValues:          a KeyValuesArray
-    private func parseIpReply(_ keyValues: KeyValuesArray) {
-        DispatchQueue.main.async { [self] in
-            _suppress = true
-
-            // save the returned ip address
-            clientIp = keyValues[0].key
-
-            _suppress = false
-        }
-    }
-
     /// Parse the Reply to a Version command, reply format: <key=value>#<key=value>#...<key=value>
     ///   executed on the parseQ
     ///
     /// - Parameters:
-    ///   - keyValues:          a KeyValuesArray
+    ///   - properties:          a KeyValuesArray
     private func parseVersionReply(_ properties: KeyValuesArray) {
         DispatchQueue.main.async { [self] in
             _suppress = true
 
             // process each key/value pair, <key=value>
             for property in properties {
-
                 // check for unknown Keys
                 guard let token = VersionTokens(rawValue: property.key) else {
                     // log it and ignore the Key
@@ -970,7 +915,7 @@ public final class Radio: ObservableObject {
             // process each key/value pair, <key=value>
             for property in properties {
                 // Check for Unknown Keys
-                guard let token = RadioFilterSharpness(rawValue: property.key.lowercased())  else {
+                guard let token = FilterSharpnessTokens(rawValue: property.key.lowercased())  else {
                     // log it and ignore the Key
                     _log("Radio, unknown filter token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue
@@ -1008,7 +953,7 @@ public final class Radio: ObservableObject {
             // process each key/value pair, <key=value>
             for property in properties {
                 // Check for Unknown Keys
-                guard let token = RadioStaticNet(rawValue: property.key)  else {
+                guard let token = StaticNetTokens(rawValue: property.key)  else {
                     // log it and ignore the Key
                     _log("Radio, unknown static token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue
@@ -1037,7 +982,7 @@ public final class Radio: ObservableObject {
             // process each key/value pair, <key=value>
             for property in properties {
                 // Check for Unknown Keys
-                guard let token = RadioOscillator(rawValue: property.key)  else {
+                guard let token = OscillatorTokens(rawValue: property.key)  else {
                     // log it and ignore the Key
                     _log("Radio, unknown oscillator token: \(property.key) = \(property.value)", .warning, #function, #file, #line)
                     continue
@@ -1078,7 +1023,7 @@ public final class Radio: ObservableObject {
     private func radioCmd( _ tokenString: String, _ value: Any) {
         _api.send("radio " + tokenString + " \(value)")
     }
-    private func radioFilterCmd( _ token1: RadioFilterSharpness,  _ token2: RadioFilterSharpness, _ value: Any) {
+    private func radioFilterCmd( _ token1: FilterSharpnessTokens,  _ token2: FilterSharpnessTokens, _ value: Any) {
         _api.send("radio filter_sharpness" + " " + token1.rawValue + " " + token2.rawValue + "=\(value)")
     }
     private func xmitCmd(_ value: Any) {
@@ -1100,7 +1045,7 @@ extension Radio: StaticModel {
             _suppress = true
 
             // separate by category
-            if let category = RadioTokenTypes(rawValue: properties[0].key) {
+            if let category = RadioSubTokens(rawValue: properties[0].key) {
                 // drop the first property
                 let adjustedProperties = Array(properties[1...])
 
@@ -1154,10 +1099,8 @@ extension Radio: StaticModel {
             }
             // is the Radio initialized?
             if !_radioInitialized {
-                // YES, the Radio (hardware) has acknowledged this Radio
+                // YES, notify all observers
                 _radioInitialized = true
-
-                // notify all observers
                 NC.post(.radioHasBeenAdded, object: self as Any?)
             }
             _suppress = false
@@ -1251,7 +1194,6 @@ extension Radio: ApiDelegate {
         switch command {
         
         case "client gui":    parseGuiReply( reply.keyValuesArray() )         // (V3 only)
-        case "client ip":     parseIpReply( reply.keyValuesArray() )
         case "slice list":    DispatchQueue.main.async { [self] in sliceList = reply.valuesArray().compactMap {$0.objectId} }
 
         case "ant list":      DispatchQueue.main.async { [self] in antennaList = reply.valuesArray( delimiter: "," ) }

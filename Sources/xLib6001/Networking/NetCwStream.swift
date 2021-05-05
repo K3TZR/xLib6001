@@ -7,8 +7,6 @@
 
 import Foundation
 
-public typealias NetCwId = StreamId
-
 /// NetCwStream Class implementation
 ///
 ///      creates an NetCwStream instance to be used by a Client to transmit KEY and PTT

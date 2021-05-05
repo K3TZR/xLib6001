@@ -8,8 +8,6 @@
 
 import Foundation
 
-public typealias MemoryId = ObjectId
-
 /// Memory Class implementation
 ///
 ///       creates a Memory instance to be used by a Client to support the
@@ -201,6 +199,9 @@ public final class Memory: ObservableObject, Identifiable {
         _api.send("memory set " + "\(id) " + token.rawValue + "=\(value)")
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - DynamicModel extension
 
 extension Memory: DynamicModel {
     /// Parse a Memory status message

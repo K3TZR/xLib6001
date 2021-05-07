@@ -66,5 +66,3 @@ public protocol StreamHandler: AnyObject {
     /// - Parameter frame:        a frame of data
     func streamHandler<T>(_ frame: T)
 }
-
-

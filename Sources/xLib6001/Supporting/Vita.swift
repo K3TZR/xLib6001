@@ -11,7 +11,6 @@ import Foundation
 ///  VITA header struct implementation
 ///      provides decoding and encoding services for Vita encoding
 ///      see http://www.vita.com
-///
 public struct VitaHeader {
     // this struct mirrors the structure of a Vita Header
     //      some of these fields are optional in a generic Vita-49 header
@@ -38,7 +37,6 @@ public struct VitaHeader {
 ///     struct into a Vita Data packet. The "decode" static method converts a supplied
 ///     Vita Data packet into a Vita struct.
 public class Vita {
-
     // ----------------------------------------------------------------------------
     // MARK: - Static properties
 
@@ -47,6 +45,7 @@ public class Vita {
     static let kFlexOui                       : UInt32 = 0x1c2d
     static let kOuiMask                       : UInt32 = 0x00ffffff
     static let kFlexInformationClassCode      : UInt32 = 0x534c
+
     static let kClassIdPresentMask            : UInt8 = 0x08
     static let kTrailerPresentMask            : UInt8 = 0x04
 
@@ -272,7 +271,6 @@ public class Vita {
 
     /// Encode a Vita class as a Data type
     /// - Returns:          a Data type containing the Vita stream
-    ///
     public class func encodeAsData(_ vita: Vita) -> Data? {
         // TODO: Handle optional fields
 
@@ -329,7 +327,6 @@ public class Vita {
 
     /// Parse a Vita class containing a Discovery broadcast
     /// - Returns:        a RadioParameters struct (or nil)
-    ///
     public class func parseVitaDiscovery(_ vita: Vita) -> DiscoveryPacket? {
         // is this a Discovery packet?
         if vita.classIdPresent && vita.classCode == .discovery {
@@ -399,13 +396,7 @@ public class Vita {
             case .lastSeen:                   break
             }
         }
-        //        // is it a valid Discovery packet?
-        //        if packet.publicIp != "" && packet.port != 0 && packet.model != "" && packet.serialNumber != "" {
-        //            // YES, return the packet
         return packet
-        //        }
-        //        // Not a Discovery packet
-        //        return nil
     }
 
     // ----------------------------------------------------------------------------
@@ -423,8 +414,8 @@ public class Vita {
     ///   - reducedBW:      is for reduced bandwidth
     ///
     convenience init(type: VitaTypes, streamId: UInt32, reducedBW: Bool = false) {
-
         switch type {
+
         case .netCW:    self.init(packetType: .extDataWithStream, classCode: .daxAudio, streamId: streamId, tsi: .other, tsf: .sampleCount)
         case .opusTxV2: self.init(packetType: .extDataWithStream, classCode: .daxAudio, streamId: streamId, tsi: .other, tsf: .sampleCount)
         case .opusTx:   self.init(packetType: .extDataWithStream, classCode: .opus, streamId: streamId, tsi: .other, tsf: .sampleCount)
@@ -443,7 +434,6 @@ public class Vita {
     ///   - tsi:            the type of Integer Time Stamp
     ///   - tsf:            the type of Fractional Time Stamp
     /// - Returns:          a partially populated Vita struct
-    ///
     init(packetType: PacketTypes, classCode: PacketClassCodes, streamId: UInt32, tsi: TsiTypes, tsf: TsfTypes) {
         assert(packetType == .extDataWithStream || packetType == .ifDataWithStream)
 
@@ -459,7 +449,6 @@ public class Vita {
 
     /// Return a String description of a Vita class
     /// - Returns:          a String describing the Vita class
-    ///
     public func desc() -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .none
@@ -504,6 +493,9 @@ public class Vita {
     """
     }
 }
+
+// ----------------------------------------------------------------------------
+// MARK: - Vita types
 
 extension Vita {
     /// Types

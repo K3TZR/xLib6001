@@ -10,11 +10,9 @@ import Foundation
 
 // ----------------------------------------------------------------------------
 // MARK: - LogProxy implementation
-//
 //      provides a singleton Log instance which optionally, given a delegate,
 //      forwards log messages to the Client for processing by the Client's
 //      choice (if any) of logging software
-//
 // ----------------------------------------------------------------------------
 
 public final class LogProxy {
@@ -47,7 +45,6 @@ public final class LogProxy {
     ///   - function:   the function where the message originated
     ///   - file:       the file where the message originated
     ///   - line:       the line where the message originated
-    ///
     public func logMessage(_ msg: String, _ level: MessageLevel, _ function: StaticString, _ file: StaticString, _ line: Int ) {
         // pass the entry to the delegate (if any)
         if delegate != nil {
@@ -77,7 +74,6 @@ public enum MessageLevel: Int {
     /// - Parameters:
     ///   - response:           the Flex response as a hex String
     /// - Returns:              the equivalent xLib6001 MessageLevel
-    ///
     public static func from(_ response: String) -> MessageLevel {
         var value = MessageLevel.verbose            // "1" is converted to .verbose
         
@@ -93,7 +89,8 @@ public enum MessageLevel: Int {
             value = MessageLevel(rawValue: bitValue)!
         }
         return value
-    }    
+    }
+
     public var prefix :String {
         switch self {
 

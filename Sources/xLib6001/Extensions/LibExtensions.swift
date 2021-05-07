@@ -50,7 +50,6 @@ public typealias ValuesArray        = [String]
 public typealias WaterfallStreamId  = StreamId
 public typealias XvtrId             = ObjectId
 
-
 public let kControlMin = 0
 public let kControlMax = 100
 public let kMinPitch = 100
@@ -68,7 +67,6 @@ public extension Date {
     /// Create a Date/Time in the local time zone
     ///
     /// - Returns: a DateTime string
-    ///
     func currentTimeZoneDate() -> String {
         let dtf = DateFormatter()
         dtf.timeZone = TimeZone.current
@@ -81,52 +79,46 @@ public extension Date {
 public extension NotificationCenter {
     
     /// post a Notification by Name
-    ///
     /// - Parameters:
     ///   - notification:   Notification Name
     ///   - object:         associated object
-    ///
     class func post(_ name: String, object: Any?) {
         NotificationCenter.default.post(name: NSNotification.Name(rawValue: name), object: object)
     }
+
     /// post a Notification by Type
-    ///
     /// - Parameters:
     ///   - notification:   Notification Type
     ///   - object:         associated object
-    ///
     class func post(_ notification: NotificationType, object: Any?) {
         NotificationCenter.default.post(name: Notification.Name(rawValue: notification.rawValue), object: object)
     }
+
     /// setup a Notification Observer by Name
-    ///
     /// - Parameters:
     ///   - observer:       the object receiving Notifications
     ///   - selector:       a Selector to receive the Notification
     ///   - type:           Notification name
     ///   - object:         associated object (if any)
-    ///
     class func makeObserver(_ observer: Any, with selector: Selector, of name: String, object: Any? = nil) {
         NotificationCenter.default.addObserver(observer, selector: selector, name: NSNotification.Name(rawValue: name), object: object)
     }
+
     /// setup a Notification Observer by Type
-    ///
     /// - Parameters:
     ///   - observer:       the object receiving Notifications
     ///   - selector:       a Selector to receive the Notification
     ///   - type:           Notification type
     ///   - object:         associated object (if any)
-    ///
     class func makeObserver(_ observer: Any, with selector: Selector, of type: NotificationType, object: Any? = nil) {
         NotificationCenter.default.addObserver(observer, selector: selector, name: NSNotification.Name(rawValue: type.rawValue), object: object)
     }
+
     /// remove a Notification Observer by Type
-    ///
     /// - Parameters:
     ///   - observer:       the object receiving Notifications
     ///   - type:           Notification type
     ///   - object:         associated object (if any)
-    ///
     class func deleteObserver(_ observer: Any, of type: NotificationType, object: Any?) {
         NotificationCenter.default.removeObserver(observer, name: NSNotification.Name(rawValue: type.rawValue), object: object)
     }
@@ -135,13 +127,10 @@ public extension NotificationCenter {
 public extension Sequence {
     
     /// Find an element in an array
-    ///
     /// - Parameters:
     ///   - match:      comparison closure
     /// - Returns:      the element (or nil)
-    ///
     func findElement(_ match:(Iterator.Element)->Bool) -> Iterator.Element? {
-        
         for element in self where match(element) {
             return element
         }
@@ -150,7 +139,6 @@ public extension Sequence {
 }
 
 public extension String {
-    
     var bValue          : Bool            { (Int(self) ?? 0) == 1 ? true : false }
     var cgValue         : CGFloat         { CGFloat(self) }
     var dValue          : Double          { Double(self) ?? 0 }
@@ -168,22 +156,19 @@ public extension String {
     var uValue32        : UInt32          { UInt32(self) ?? 0 }
     
     /// Replace spaces with a specified value
-    ///
     /// - Parameters:
     ///   - value:      the String to replace spaces
     /// - Returns:      the adjusted String
-    ///
     func replacingSpaces(with value: String = "\u{007F}") -> String {
         return self.replacingOccurrences(of: " ", with: value)
     }
+
     /// Parse a String of <key=value>'s separated by the given Delimiter
-    ///
     /// - Parameters:
     ///   - delimiter:          the delimiter between key values (defaults to space)
     ///   - keysToLower:        convert all Keys to lower case (defaults to YES)
     ///   - valuesToLower:      convert all values to lower case (defaults to NO)
     /// - Returns:              a KeyValues array
-    ///
     func keyValuesArray(delimiter: String = " ", keysToLower: Bool = true, valuesToLower: Bool = false) -> KeyValuesArray {
         var kvArray = KeyValuesArray()
         
@@ -215,13 +200,12 @@ public extension String {
         }
         return kvArray
     }
+
     /// Parse a String of <value>'s separated by the given Delimiter
-    ///
     /// - Parameters:
     ///   - delimiter:          the delimiter between values (defaults to space)
     ///   - valuesToLower:      convert all values to lower case (defaults to NO)
     /// - Returns:              a values array
-    ///
     func valuesArray(delimiter: String = " ", valuesToLower: Bool = false) -> ValuesArray {
         guard self != "" else {return [String]() }
         
@@ -231,10 +215,9 @@ public extension String {
         
         return array
     }
+
     /// Replace spaces and equal signs in a CWX Macro with alternate characters
-    ///
     /// - Returns:      the String after processing
-    ///
     func fix(spaceReplacement: String = "\u{007F}", equalsReplacement: String = "*") -> String {
         var newString: String = ""
         var quotes = false
@@ -258,10 +241,9 @@ public extension String {
         }
         return newString
     }
+
     /// Undo any changes made to a Cwx Macro string by the fix method    ///
-    ///
     /// - Returns:          the String after undoing the fixString changes
-    ///
     func unfix(spaceReplacement: String = "\u{007F}", equalsReplacement: String = "*") -> String {
         var newString: String = ""
         
@@ -278,10 +260,9 @@ public extension String {
         }
         return newString
     }
+
     /// Check if a String is a valid IP4 address
-    ///
     /// - Returns:          the result of the check as Bool
-    ///
     func isValidIP4() -> Bool {
         // check for 4 values separated by period
         let parts = self.components(separatedBy: ".")
@@ -315,33 +296,27 @@ public extension Bool {
 
 public extension Float {
     /// Determine if a value is between two other values (inclusive)
-    ///
     /// - Parameters:
     ///   - value1:     low value (may be + or -)
     ///   - value2:     high value (may be + or -)
     /// - Returns:      true - self within two values
-    ///
     func within(_ value1: Float, _ value2: Float) -> Bool { (self >= value1) && (self <= value2) }
 }
 
 public extension Int {
     var hzToMhz     : String { String(format: "%02.6f", Double(self) / 1_000_000.0) }
     /// Determine if a value is between two other values (inclusive)
-    ///
     /// - Parameters:
     ///   - value1:     low value (may be + or -)
     ///   - value2:     high value (may be + or -)
     /// - Returns:      true - self within two values
-    ///
     func within(_ value1: Int, _ value2: Int) -> Bool { (self >= value1) && (self <= value2) }
     
     /// Force a value to be between two other values (inclusive)
-    ///
     /// - Parameters:
     ///   - value1:     the Minimum
     ///   - value2:     the Maximum
     /// - Returns:      the coerced value
-    ///
     func bound(_ value1: Int, _ value2: Int) -> Int {
         let newValue = self < value1 ? value1 : self
         return newValue > value2 ? value2 : newValue
@@ -369,14 +344,11 @@ public extension UInt32 {
 }
 
 public extension CGFloat {
-    
     /// Force a CGFloat to be within a min / max value range
-    ///
     /// - Parameters:
     ///   - min:        min CGFloat value
     ///   - max:        max CGFloat value
     /// - Returns:      adjusted value
-    ///
     func bracket(_ min: CGFloat, _ max: CGFloat) -> CGFloat {
         
         var value = self
@@ -384,24 +356,22 @@ public extension CGFloat {
         if self > max { value = max }
         return value
     }
+
     /// Create a CGFloat from a String
-    ///
     /// - Parameters:
     ///   - string:     a String
     ///
     /// - Returns:      CGFloat value of String or 0
-    ///
     init(_ string: String) {
         self = CGFloat(Float(string) ?? 0)
     }
+
     /// Format a String with the value of a CGFloat
-    ///
     /// - Parameters:
     ///   - width:      number of digits before the decimal point
     ///   - precision:  number of digits after the decimal point
     ///   - divisor:    divisor
     /// - Returns:      a String representation of the CGFloat
-    ///
     private func floatToString(width: Int, precision: Int, divisor: CGFloat) -> String {
         return String(format: "%\(width).\(precision)f", self / divisor)
     }
@@ -411,7 +381,6 @@ public extension CGFloat {
 
 /// Struct to hold a Semantic Version number
 ///     with provision for a Build Number
-///
 public struct Version {
     var major     : Int = 1
     var minor     : Int = 0
@@ -466,12 +435,10 @@ public struct Version {
 // ----------------------------------------------------------------------------
 
 /// Create a String representing a Hex Dump of a UInt8 array
-///
 /// - Parameters:
 ///   - data:           an array of UInt8
 ///   - len:            the number of elements to be processed
 /// - Returns:          a String
-///
 public func hexDump(data: [UInt8], len: Int) -> String {
     var string = ""
     for i in 1...len {
@@ -483,12 +450,10 @@ public func hexDump(data: [UInt8], len: Int) -> String {
 }
 
 /// Determine if status is for this client
-///
 /// - Parameters:
 ///   - properties:     a KeyValuesArray
 ///   - clientHandle:   the handle of ???
 /// - Returns:          true if a mtch
-///
 public func isForThisClient(_ properties: KeyValuesArray, connectionHandle: Handle?) -> Bool {
     var clientHandle : Handle = 0
     
@@ -526,7 +491,7 @@ public struct Barrier<Element> {
 
 @propertyWrapper
 /// Protect a property using a concurrent queue and a barrier for writes
-///     while limiting its value to arange
+///     while limiting its value to a range
 ///
 struct BarrierClamped<Element: Comparable> {
     private var _value      : Element
@@ -574,7 +539,6 @@ class Atomic {
 ///   - lhs:          one instance
 ///   - rhs:          another instance
 ///   - ignoring:     property names to ignore
-///
 public func compare<T>(_ a: T, to b: T, ignoring: [String] ) {
     
     func printProperty(_ label: String, _ bValue: Any, _ aValue: Any) {

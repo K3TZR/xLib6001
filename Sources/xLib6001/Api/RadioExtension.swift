@@ -118,11 +118,11 @@ extension Radio {
     // ----------------------------------------------------------------------------
     // MARK: - Binding to gui clients methods
     
-    public func bindGuiClient(_ clientId: String, callback:  ReplyHandler? = nil) {
-        guard Api.sharedInstance.isGui == false && clientId != "" else { return }
-        
-        _api.send("client bind client_id=" + clientId, replyTo: callback)
-        boundClientId = clientId
+    public func bindGuiClient(_ clientId: String?, callback:  ReplyHandler? = nil) {
+        if let clientId = clientId {
+            _api.send("client bind client_id=" + clientId, replyTo: callback)
+            boundClientId = clientId
+        }
     }
     
     // ----------------------------------------------------------------------------

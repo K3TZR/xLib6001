@@ -53,7 +53,6 @@ public final class Api {
     public var apiDelegate: ApiDelegate?
     public var apiState: ApiState = .clientDisconnected
     public var connectionHandle: Handle?
-    public var isGui = true
     public var nsLogState: NSLogging = .normal
     public var pingerEnabled = true
     public var testerDelegate: ApiDelegate?
@@ -246,7 +245,7 @@ public final class Api {
             if tcp.connect(packet) {
                 checkVersion(packet)
 
-                self.isGui = (params.pendingDisconnect == .none ? isGui : false)
+//                self.isGui = (params.pendingDisconnect == .none ? isGui : false)
                 activeRadio = Discovery.sharedInstance.radios[params.index]
 
                 return true
@@ -422,7 +421,7 @@ public final class Api {
     
     /// Send commands to configure the connection
     private func sendCommands(to radio: Radio) {
-        if isGui {
+        if _params.isGui {
             if _params.clientId != nil   {
                 send("client gui " + _params.clientId!)
             } else {
@@ -430,8 +429,8 @@ public final class Api {
             }
         }
         send("client program " + _params.program)
-        if isGui { send("client station " + _params.station) }
-        if !isGui && _params.clientId != nil { radio.bindGuiClient(_params.clientId!) }
+        if _params.isGui { send("client station " + _params.station) }
+        if !_params.isGui && _params.clientId != nil { radio.bindGuiClient(_params.clientId!) }
         if _params.lowBandwidthConnect { radio.requestLowBandwidthConnect() }
         radio.requestInfo()
         radio.requestVersion()

@@ -290,7 +290,7 @@ extension Transmit: StaticModel {
                 // notify all observers
                 NC.post(.transmitHasBeenAdded, object: self as Any?)
             }
+            _suppress = false
         }
-        _suppress = false
     }
 }

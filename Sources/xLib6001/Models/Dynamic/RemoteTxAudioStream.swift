@@ -167,6 +167,7 @@ extension RemoteTxAudioStream: DynamicModel {
     /// - Parameter properties: a KeyValuesArray
     func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
+        
         // process each key/value pair
         for property in properties {
             // check for unknown Keys

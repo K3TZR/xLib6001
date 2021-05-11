@@ -62,30 +62,30 @@ public final class Api {
     // MARK: - Public types
 
     public struct ConnectionParams {
-//        public init(index: Int,
-//                    station: String = "",
-//                    program: String = "",
-//                    clientId: String? = nil,
-//                    isGui: Bool = true,
-//                    wanHandle: String = "",
-//                    lowBandwidthConnect: Bool = false,
-//                    lowBandwidthDax: Bool = false,
-//                    logState: Api.NSLogging = NSLogging.normal,
-//                    needsCwStream: Bool = false,
-//                    pendingDisconnect: Api.PendingDisconnect = PendingDisconnect.none) {
-//
-//            self.index = index
-//            self.station = station
-//            self.program = program
-//            self.clientId = clientId
-//            self.isGui = isGui
-//            self.wanHandle = wanHandle
-//            self.lowBandwidthConnect = lowBandwidthConnect
-//            self.lowBandwidthDax = lowBandwidthDax
-//            self.logState = logState
-//            self.needsCwStream = needsCwStream
-//            self.pendingDisconnect = pendingDisconnect
-//        }
+        public init(index: Int,
+                    station: String = "",
+                    program: String = "",
+                    clientId: String? = nil,
+                    isGui: Bool = true,
+                    wanHandle: String = "",
+                    lowBandwidthConnect: Bool = false,
+                    lowBandwidthDax: Bool = false,
+                    logState: Api.NSLogging = NSLogging.normal,
+                    needsCwStream: Bool = false,
+                    pendingDisconnect: Api.PendingDisconnect = PendingDisconnect.none) {
+
+            self.index = index
+            self.station = station
+            self.program = program
+            self.clientId = clientId
+            self.isGui = isGui
+            self.wanHandle = wanHandle
+            self.lowBandwidthConnect = lowBandwidthConnect
+            self.lowBandwidthDax = lowBandwidthDax
+            self.logState = logState
+            self.needsCwStream = needsCwStream
+            self.pendingDisconnect = pendingDisconnect
+        }
 
         public var index: Int
         public var station = ""

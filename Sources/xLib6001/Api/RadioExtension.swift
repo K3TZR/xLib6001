@@ -114,9 +114,25 @@ extension Radio {
         // ask the Radio for the selected Equalizer settings
         _api.send("eq " + eqType + " info", replyTo: callback)
     }
-    
+
     // ----------------------------------------------------------------------------
-    // MARK: - Binding to gui clients methods
+    // MARK: -  GuiClient methods
+
+    public func findHandle(for clientId: String?) -> Handle? {
+        guard clientId != nil else { return nil }
+
+        for client in guiClients where client.clientId == clientId {
+            return client.handle
+        }
+        return nil
+    }
+
+    public func findClientId(for station: String) -> String? {
+        for client in guiClients {
+            if client.station == station { return client.clientId }
+        }
+        return nil
+    }
     
     public func bindGuiClient(_ clientId: String?, callback:  ReplyHandler? = nil) {
         if let clientId = clientId {
@@ -289,7 +305,33 @@ extension Radio {
     public func staticNetParamsSet(callback: ReplyHandler? = nil) {
         _api.send("radio static_net_params" + " " + StaticNetTokens.ip.rawValue + "=\(staticIp) " + StaticNetTokens.gateway.rawValue + "=\(staticGateway) " + StaticNetTokens.netmask.rawValue + "=\(staticNetmask)")
     }
-    
+
+    // ----------------------------------------------------------------------------
+    // MARK: -  RemoteRxAudioStream methods
+
+    public func requestRemoteRxAudioStream(compression: String = RemoteRxAudioStream.Compression.opus.rawValue, callback: ReplyHandler? = nil) {
+        _api.send("stream create type=remote_audio_rx compression=\(compression)", replyTo: callback)
+    }
+
+    public func removeRemoteRxAudioStream() {
+        for (_, stream) in remoteRxAudioStreams where stream.clientHandle == Api.sharedInstance.connectionHandle! {
+            stream.remove()
+        }
+    }
+
+    // ----------------------------------------------------------------------------
+    // MARK: -  RemoteTxAudioStream methods
+
+    public func requestRemoteTxAudioStream(callback: ReplyHandler? = nil) {
+        _api.send("stream create type=remote_audio_tx", replyTo: callback)
+    }
+
+    public func removeRemoteTxAudioStream() {
+        for (_, stream) in remoteTxAudioStreams where stream.clientHandle == Api.sharedInstance.connectionHandle! {
+            stream.remove()
+        }
+    }
+
     // ----------------------------------------------------------------------------
     // MARK: - Slice methods
 
@@ -414,52 +456,7 @@ extension Radio {
         }
         return nil
     }
-    
-    // ----------------------------------------------------------------------------
-    // MARK: -  GuiClient methods
-    
-    public func findHandle(for clientId: String?) -> Handle? {
-        guard clientId != nil else { return nil }
-        
-        for client in guiClients where client.clientId == clientId {
-            return client.handle
-        }
-        return nil
-    }
 
-    public func findClientId(for station: String) -> String? {
-        for client in guiClients {
-            if client.station == station { return client.clientId }
-        }
-        return nil
-    }
-    
-    // ----------------------------------------------------------------------------
-    // MARK: -  RemoteRxAudioStream methods
-    
-    public func requestRemoteRxAudioStream(compression: String = RemoteRxAudioStream.Compression.opus.rawValue, callback: ReplyHandler? = nil) {
-        _api.send("stream create type=remote_audio_rx compression=\(compression)", replyTo: callback)
-    }
-    
-    public func removeRemoteRxAudioStream() {
-        for (_, stream) in remoteRxAudioStreams where stream.clientHandle == Api.sharedInstance.connectionHandle! {
-            stream.remove()
-        }
-    }
-    
-    // ----------------------------------------------------------------------------
-    // MARK: -  RemoteTxAudioStream methods
-    
-    public func requestRemoteTxAudioStream(callback: ReplyHandler? = nil) {
-        _api.send("stream create type=remote_audio_tx", replyTo: callback)
-    }
-    
-    public func removeRemoteTxAudioStream() {
-        for (_, stream) in remoteTxAudioStreams where stream.clientHandle == Api.sharedInstance.connectionHandle! {
-            stream.remove()
-        }
-    }
-    
     // ----------------------------------------------------------------------------
     // MARK: - Tnf methods
     

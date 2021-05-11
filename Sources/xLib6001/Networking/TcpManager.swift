@@ -20,7 +20,6 @@ protocol TcpManagerDelegate: AnyObject {
 
 ///  TcpManager Class implementation
 ///      manages all TCP communication between the API and the Radio (hardware)
-///
 final class TcpManager: NSObject {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
@@ -46,6 +45,8 @@ final class TcpManager: NSObject {
     private var _tcpSendQ: DispatchQueue
     private var _tcpSocket: GCDAsyncSocket!
     private var _timeout = 0.0   // seconds
+
+    @Atomic(0, q: Api.objectQ) var sequenceNumber: Int
 
     // ----------------------------------------------------------------------------
     // *** Backing properties (DO NOT ACCESS) ***
@@ -115,7 +116,8 @@ final class TcpManager: NSObject {
             // connection attemp failed
             success = false
         }
-        if success { _isWan = packet.isWan ; _seqNum = 0 }
+//        if success { _isWan = packet.isWan ; _seqNum = 0 }
+        if success { _isWan = packet.isWan ; sequenceNumber = 0 }
         return success
     }
     /// Disconnect TCP from the Radio (hardware)
@@ -129,25 +131,29 @@ final class TcpManager: NSObject {
     ///   - diagnostic:     whether to add "D" suffix
     /// - Returns:          the Sequence Number of the Command
     func send(_ cmd: String, diagnostic: Bool = false) -> UInt {
-        var lastSeqNum : UInt = 0
+        var lastSequenceNumber : Int = 0
         var command = ""
 
         _tcpSendQ.sync {
             // assemble the command
-            command =  "C" + "\(diagnostic ? "D" : "")" + "\(self._seqNum)|" + cmd + "\n"
+//            command =  "C" + "\(diagnostic ? "D" : "")" + "\(self._seqNum)|" + cmd + "\n"
+            command =  "C" + "\(diagnostic ? "D" : "")" + "\(self.sequenceNumber)|" + cmd + "\n"
 
             // send it, no timeout, tag = segNum
-            self._tcpSocket.write(command.data(using: String.Encoding.utf8, allowLossyConversion: false)!, withTimeout: -1, tag: Int(self._seqNum))
+//            self._tcpSocket.write(command.data(using: String.Encoding.utf8, allowLossyConversion: false)!, withTimeout: -1, tag: Int(self._seqNum))
+            self._tcpSocket.write(command.data(using: String.Encoding.utf8, allowLossyConversion: false)!, withTimeout: -1, tag: Int(self.sequenceNumber))
 
-            lastSeqNum = _seqNum
+//            lastSeqNum = _seqNum
+            lastSequenceNumber = sequenceNumber
 
             // increment the Sequence Number
-            _seqNum += 1
+//            _seqNum += 1
+            $sequenceNumber.mutate { $0 += 1}
         }
         self._delegate?.didSend(command)
 
         // return the Sequence Number of the last command
-        return lastSeqNum
+        return UInt(lastSequenceNumber)
     }
 
     /// Read the next data block (with an indefinite timeout)

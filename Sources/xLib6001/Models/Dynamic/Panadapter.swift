@@ -179,7 +179,6 @@ public final class Panadapter: ObservableObject, Identifiable {
     ///   - seqNum:         the Sequence Number of the original command
     ///   - responseValue:  the response value
     ///   - reply:          the reply
-    ///
     func rfGainReplyHandler(_ command: String, sequenceNumber: SequenceNumber, responseValue: String, reply: String) {
         // Anything other than 0 is an error
         guard responseValue == Api.kNoError else {
@@ -232,7 +231,6 @@ extension Panadapter: DynamicModelWithStream {
     ///   - radio:          the current Radio class
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
-    ///
     class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // Format: <"pan", ""> <streamId, ""> <"wnb", 1|0> <"wnb_level", value> <"wnb_updating", 1|0> <"x_pixels", value> <"y_pixels", value>
         //          <"center", value>, <"bandwidth", value> <"min_dbm", value> <"max_dbm", value> <"fps", value> <"average", value>
@@ -277,7 +275,6 @@ extension Panadapter: DynamicModelWithStream {
     /// Parse Panadapter key/value pairs
     ///   executes on the mainQ
     /// - Parameter properties:       a KeyValuesArray
-    ///
     func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
 
@@ -341,7 +338,6 @@ extension Panadapter: DynamicModelWithStream {
     ///
     /// - Parameters:
     ///   - vita:        a Vita struct
-    ///
     func vitaProcessor(_ vita: Vita) {
         if isStreaming == false {
             isStreaming = true
@@ -349,9 +345,7 @@ extension Panadapter: DynamicModelWithStream {
             _log("Panadapter Stream started: \(id.hex)", .info, #function, #file, #line)
         }
 
-
         // convert the Vita struct to a PanadapterFrame
-//        if _panadapterframes[_frameNumber].accumulate(version: _radio.version, vita: vita, expectedFrame: &packetFrame) {
         if _panadapterframes[_frameNumber].accumulate(vita: vita, expectedFrame: &packetFrame) {
             // Pass the data frame to this Panadapter's delegate
             delegate?.streamHandler(_panadapterframes[_frameNumber])
@@ -364,30 +358,23 @@ extension Panadapter: DynamicModelWithStream {
 
 /// Class containing Panadapter Stream data
 ///   populated by the Panadapter vitaHandler
-///
 public struct PanadapterFrame {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
 
-    public private(set) var startingBin       = 0                             // Index of first bin
-    public private(set) var binsInThisFrame      = 0                             // Number of bins
-    public private(set) var binSize           = 0                             // Bin size in bytes
-    public private(set) var totalBins         = 0                             // number of bins in the complete frame
-    public private(set) var receivedFrame     = 0                             // Frame number
-    public var bins                           = [UInt16]()                    // Array of bin values
+    public private(set) var startingBin       = 0           // Index of first bin
+    public private(set) var binsInThisFrame   = 0           // Number of bins
+    public private(set) var binSize           = 0           // Bin size in bytes
+    public private(set) var totalBins         = 0           // number of bins in the complete frame
+    public private(set) var receivedFrame     = 0           // Frame number
+    public var bins                           = [UInt16]()  // Array of bin values
 
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
 
-    private var _log                          = LogProxy.sharedInstance.libMessage
+    private var _log = LogProxy.sharedInstance.libMessage
 
-    private struct PayloadHeaderOld {                                        // struct to mimic payload layout
-        var startingBin                         : UInt32
-        var numberOfBins                        : UInt32
-        var binSize                             : UInt32
-        var frameIndex                          : UInt32
-    }
-    private struct PayloadHeader {                                            // struct to mimic payload layout
+    private struct PayloadHeader {              // struct to mimic payload layout
         var startingBin                         : UInt16
         var numberOfBins                        : UInt16
         var binSize                             : UInt16
@@ -395,7 +382,6 @@ public struct PanadapterFrame {
         var frameIndex                          : UInt32
     }
     private var _expectedIndex                = 0
-    //  private var _binsProcessed                = 0
     private var _byteOffsetToBins             = 0
 
     // ----------------------------------------------------------------------------
@@ -404,7 +390,6 @@ public struct PanadapterFrame {
     /// Initialize a PanadapterFrame
     ///
     /// - Parameter frameSize:    max number of Panadapter samples
-    ///
     public init(frameSize: Int) {
         // allocate the bins array
         self.bins = [UInt16](repeating: 0, count: frameSize)
@@ -417,44 +402,22 @@ public struct PanadapterFrame {
     ///
     /// - Parameter vita:         incoming Vita object
     /// - Returns:                true if entire frame processed
-    ///
-//    public mutating func accumulate(version: Version, vita: Vita, expectedFrame: inout Int) -> Bool {
     public mutating func accumulate(vita: Vita, expectedFrame: inout Int) -> Bool {
-//        if version.isGreaterThanV22 {
-            // 2.3.x or greater
-            // Bins are just beyond the payload
-            _byteOffsetToBins = MemoryLayout<PayloadHeader>.size
-            
-            vita.payloadData.withUnsafeBytes { ptr in
+        // 2.3.x or greater
+        // Bins are just beyond the payload
+        _byteOffsetToBins = MemoryLayout<PayloadHeader>.size
 
-                // map the payload to the New Payload struct
-                let hdr = ptr.bindMemory(to: PayloadHeader.self)
+        vita.payloadData.withUnsafeBytes { ptr in
 
-                startingBin = Int(CFSwapInt16BigToHost(hdr[0].startingBin))
-                binsInThisFrame = Int(CFSwapInt16BigToHost(hdr[0].numberOfBins))
-                binSize = Int(CFSwapInt16BigToHost(hdr[0].binSize))
-                totalBins = Int(CFSwapInt16BigToHost(hdr[0].totalBins))
-                receivedFrame = Int(CFSwapInt32BigToHost(hdr[0].frameIndex))
-            }
-            
-//        } else {
-//            // pre 2.3.x
-//            // Bins are just beyond the payload
-//            _byteOffsetToBins = MemoryLayout<PayloadHeaderOld>.size
-//
-//            vita.payloadData.withUnsafeBytes { ptr in
-//
-//                // map the payload to the New Payload struct
-//                let hdr = ptr.bindMemory(to: PayloadHeaderOld.self)
-//
-//                // byte swap and convert each payload component
-//                startingBin = Int(CFSwapInt32BigToHost(hdr[0].startingBin))
-//                binsInThisFrame = Int(CFSwapInt32BigToHost(hdr[0].numberOfBins))
-//                binSize = Int(CFSwapInt32BigToHost(hdr[0].binSize))
-//                totalBins = binsInThisFrame
-//                receivedFrame = Int(CFSwapInt32BigToHost(hdr[0].frameIndex))
-//            }
-//        }
+            // map the payload to the New Payload struct
+            let hdr = ptr.bindMemory(to: PayloadHeader.self)
+
+            startingBin = Int(CFSwapInt16BigToHost(hdr[0].startingBin))
+            binsInThisFrame = Int(CFSwapInt16BigToHost(hdr[0].numberOfBins))
+            binSize = Int(CFSwapInt16BigToHost(hdr[0].binSize))
+            totalBins = Int(CFSwapInt16BigToHost(hdr[0].totalBins))
+            receivedFrame = Int(CFSwapInt32BigToHost(hdr[0].frameIndex))
+        }
         // validate the packet (could be incomplete at startup)
         if totalBins == 0 { return false }
         if startingBin + binsInThisFrame > totalBins { return false }

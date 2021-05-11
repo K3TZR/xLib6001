@@ -1164,28 +1164,6 @@ extension Radio: ApiDelegate {
                 // Anything other than 0 is an error, log it and ignore the Reply
                 let errorLevel = flexErrorLevel(errorCode: responseValue)
                 _log("Radio, reply to c\(sequenceNumber), \(command): non-zero reply \(responseValue), \(flexErrorString(errorCode: responseValue))", errorLevel, #function, #file, #line)
-                
-                // FIXME: ***** Temporarily commented out until bugs in v2.4.9 are fixed *****
-                
-                //        switch errorLevel {
-                //
-                //        case "Error", "Fatal error", "Unknown error":
-                //          DispatchQueue.main.sync {
-                //            let alert = NSAlert()
-                //            alert.messageText = "\(errorLevel) on command\nc\(seqNum)|\(command)"
-                //            alert.informativeText = "\(responseValue) \n\(flexErrorString(errorCode: responseValue)) \n\nAPPLICATION WILL BE TERMINATED"
-                //            alert.alertStyle = .critical
-                //            alert.addButton(withTitle: "Ok")
-                //
-                //            let _ = alert.runModal()
-                //
-                //            // terminate App
-                //            NSApp.terminate(self)
-                //          }
-                //
-                //        default:
-                //          break
-                //        }
             }
             return
         }

@@ -28,7 +28,9 @@ public class GuiClient: ObservableObject, Identifiable {
     ///   - radio:        the Radio instance
     ///   - id:           a Tnf Id
     ///
-    public init(handle: Handle, station: String, program: String, clientId: String? = nil, host: String = "", ip: String = "", isLocalPtt: Bool = false, isThisClient: Bool = false) {
+    public init(handle: Handle, station: String, program: String,
+                clientId: String? = nil, host: String = "", ip: String = "",
+                isLocalPtt: Bool = false, isThisClient: Bool = false) {
         self.handle = handle
         self.station = station
         self.program = program

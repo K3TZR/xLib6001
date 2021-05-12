@@ -154,13 +154,6 @@ public final class Panadapter: ObservableObject, Identifiable {
         var totalBins: UInt16
         var frameIndex: UInt32
     }
-    private struct Params {
-        var startingBin: Int
-        var numberOfBins: Int
-        var binSize: Int
-        var totalBins: Int
-        var frameIndex: Int
-    }
 
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
@@ -353,16 +346,13 @@ extension Panadapter: DynamicModelWithStream {
     /// - Parameters:
     ///   - vita:        a Vita struct
     func vitaProcessor(_ vita: Vita) {
-        var _byteOffsetToBins = 0
-
         if isStreaming == false {
             isStreaming = true
             // log the start of the stream
             _log("Panadapter Stream started: \(id.hex)", .info, #function, #file, #line)
         }
-
         // Bins are just beyond the payload
-        _byteOffsetToBins = MemoryLayout<PayloadHeader>.size
+        let byteOffsetToBins = MemoryLayout<PayloadHeader>.size
 
         vita.payloadData.withUnsafeBytes { ptr in
             // map the payload to the Payload struct
@@ -397,13 +387,11 @@ extension Panadapter: DynamicModelWithStream {
             vita.payloadData.withUnsafeBytes { ptr in
                 // Swap the byte ordering of the data & place it in the bins
                 for i in 0..<_frames[_index].binsInThisFrame {
-                    _frames[_index].bins[i+_frames[_index].startingBin] = CFSwapInt16BigToHost( ptr.load(fromByteOffset: _byteOffsetToBins + (2 * i), as: UInt16.self) )
+                    _frames[_index].bins[i+_frames[_index].startingBin] = CFSwapInt16BigToHost( ptr.load(fromByteOffset: byteOffsetToBins + (2 * i), as: UInt16.self) )
                 }
             }
             _frames[_index].binsInThisFrame += _frames[_index].startingBin
         }
-        _frames[_index].binsInThisFrame += _frames[_index].startingBin
-
         // increment the frame count if the entire frame has been accumulated
         if _frames[_index].binsInThisFrame == _frames[_index].totalBins { packetFrame += 1 }
 

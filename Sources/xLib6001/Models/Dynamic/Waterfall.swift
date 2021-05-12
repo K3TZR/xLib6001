@@ -44,8 +44,8 @@ public final class Waterfall: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
 
-    public private(set) var droppedPackets  = 0
-    public private(set) var packetFrame     = -1
+    @Atomic(-1, q: Api.objectQ) var packetFrame: Int
+//    @Atomic(0, q: Api.objectQ) var droppedPackets: Int
 
     // ----------------------------------------------------------------------------
     // MARK: - Internal properties
@@ -80,17 +80,28 @@ public final class Waterfall: ObservableObject, Identifiable {
         case xPixels              = "x_pixels"
         case xvtr
     }
+    private struct PayloadHeader {  // struct to mimic payload layout
+        var firstBinFreq: UInt64    // 8 bytes
+        var binBandwidth: UInt64    // 8 bytes
+        var lineDuration : UInt32   // 4 bytes
+        var numberOfBins: UInt16    // 2 bytes
+        var height: UInt16          // 2 bytes
+        var receivedFrame: UInt32   // 4 bytes
+        var autoBlackLevel: UInt32  // 4 bytes
+        var totalBins: UInt16       // 2 bytes
+        var firstBin: UInt16        // 2 bytes
+    }
 
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
 
     private let _api = Api.sharedInstance
-    private var _frameNumber        = 0
-    private var _initialized        = false
-    private let _log                = LogProxy.sharedInstance.libMessage
-    private let _numberOfDataFrames = 10
+    private var _frames = [WaterfallFrame]()
+    @Atomic(0, q: Api.objectQ) var index: Int
+    private var _initialized = false
+    private let _log = LogProxy.sharedInstance.libMessage
+    private let _numberOfFrames = 10
     private var _suppress = false
-    private var _waterfallframes    = [WaterfallFrame]()
 
     // ----------------------------------------------------------------------------
     // MARK: - Initialization
@@ -99,8 +110,8 @@ public final class Waterfall: ObservableObject, Identifiable {
         self.id = id
 
         // allocate two dataframes
-        for _ in 0..<_numberOfDataFrames {
-            _waterfallframes.append(WaterfallFrame(frameSize: 4096))
+        for _ in 0..<_numberOfFrames {
+            _frames.append(WaterfallFrame(frameSize: 4096))
         }
     }
 
@@ -217,30 +228,77 @@ extension Waterfall: DynamicModelWithStream {
     }
 
     /// Process the Waterfall Vita struct
+    ///
     ///   VitaProcessor protocol method, executes on the streamQ
     ///      The payload of the incoming Vita struct is converted to a WaterfallFrame and
     ///      passed to the Waterfall Stream Handler, called by Radio
     ///
     /// - Parameters:
     ///   - vita:       a Vita struct
-    ///
     func vitaProcessor(_ vita: Vita) {
         if isStreaming == false {
             isStreaming = true
             // log the start of the stream
             _log("Waterfall Stream started: \(id.hex)", .info, #function, #file, #line)
         }
-        // convert the Vita struct and accumulate a WaterfallFrame
-//        if _waterfallframes[_frameNumber].accumulate(version: _api.radio.version, vita: vita, expectedFrame: &packetFrame) {
-        if _waterfallframes[_frameNumber].accumulate(vita: vita, expectedFrame: &packetFrame) {
-            // save the auto black level
-            autoBlackLevel = _waterfallframes[_frameNumber].autoBlackLevel
+        // Bins are just beyond the payload
+        let byteOffsetToBins = MemoryLayout<PayloadHeader>.size
 
-            // Pass the data frame to this Waterfall's delegate
-            delegate?.streamHandler(_waterfallframes[_frameNumber])
+        vita.payloadData.withUnsafeBytes { ptr in
+            // map the payload to the New Payload struct
+            let hdr = ptr.bindMemory(to: PayloadHeader.self)
+
+            // byte swap and convert each payload component
+            _frames[index].firstBinFreq = CGFloat(CFSwapInt64BigToHost(hdr[0].firstBinFreq)) / 1.048576E6
+            _frames[index].binBandwidth = CGFloat(CFSwapInt64BigToHost(hdr[0].binBandwidth)) / 1.048576E6
+            _frames[index].lineDuration = Int( CFSwapInt32BigToHost(hdr[0].lineDuration) )
+            _frames[index].binsInThisFrame = Int( CFSwapInt16BigToHost(hdr[0].numberOfBins) )
+            _frames[index].height = Int( CFSwapInt16BigToHost(hdr[0].height) )
+            _frames[index].receivedFrame = Int( CFSwapInt32BigToHost(hdr[0].receivedFrame) )
+            _frames[index].autoBlackLevel = CFSwapInt32BigToHost(hdr[0].autoBlackLevel)
+            _frames[index].totalBins = Int( CFSwapInt16BigToHost(hdr[0].totalBins) )
+            _frames[index].startingBin = Int( CFSwapInt16BigToHost(hdr[0].firstBin) )
+        }
+        // validate the packet (could be incomplete at startup)
+        if _frames[index].totalBins == 0 { return }
+        if _frames[index].startingBin + _frames[index].binsInThisFrame > _frames[index].totalBins { return }
+
+        // initial frame?
+        if packetFrame == -1 { packetFrame = _frames[index].receivedFrame }
+
+        switch (packetFrame, _frames[index].receivedFrame) {
+
+        case (let expected, let received) where received < expected:
+            // from a previous group, ignore it
+            _log("Waterfall delayed frame(s) ignored: expected = \(expected), received = \(received)", .warning, #function, #file, #line)
+            return
+
+        case (let expected, let received) where received > expected:
+            // from a later group, jump forward
+            _log("Waterfall missing frame(s) skipped: expected = \(expected), received = \(received)", .warning, #function, #file, #line)
+            packetFrame = received
+            fallthrough
+
+        default:
+            // received == expected
+            vita.payloadData.withUnsafeBytes { ptr in
+                // Swap the byte ordering of the data & place it in the bins
+                for i in 0..<_frames[index].binsInThisFrame {
+                    _frames[index].bins[i+_frames[index].startingBin] = CFSwapInt16BigToHost( ptr.load(fromByteOffset: byteOffsetToBins + (2 * i), as: UInt16.self) )
+                }
+            }
+            _frames[index].binsInThisFrame += _frames[index].startingBin
+        }
+        // increment the frame count if the entire frame has been accumulated
+        if _frames[index].binsInThisFrame == _frames[index].totalBins { $packetFrame.mutate { $0 += 1 } }
+
+        // is it a complete Frame?
+        if _frames[index].binsInThisFrame == _frames[index].totalBins {
+            // YES, pass it to the delegate
+            delegate?.streamHandler(_frames[index])
 
             // use the next dataframe
-            _frameNumber = (_frameNumber + 1) % _numberOfDataFrames
+            $index.mutate { $0 += 1 ; $0 = $0 % _numberOfFrames }
         }
     }
 }
@@ -248,51 +306,20 @@ extension Waterfall: DynamicModelWithStream {
 /// Class containing Waterfall Stream data
 ///
 ///   populated by the Waterfall vitaHandler
-///
 public struct WaterfallFrame {
-
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
 
-    public private(set) var firstBinFreq      : CGFloat   = 0.0               // Frequency of first Bin (Hz)
-    public private(set) var binBandwidth      : CGFloat   = 0.0               // Bandwidth of a single bin (Hz)
-    public private(set) var lineDuration      = 0                             // Duration of this line (ms)
-    public private(set) var binsInThisFrame   = 0                             // Number of bins
-    public private(set) var height            = 0                             // Height of frame (pixels)
-    public private(set) var receivedFrame     = 0                             // Time code
-    public private(set) var autoBlackLevel    : UInt32 = 0                    // Auto black level
-    public private(set) var totalBins         = 0                             //
-    public private(set) var startingBin       = 0                             //
-    public var bins                           = [UInt16]()                    // Array of bin values
-
-    // ----------------------------------------------------------------------------
-    // MARK: - Private properties
-
-    private var _binsProcessed                = 0
-    private var _byteOffsetToBins             = 0
-    private var _log                          = LogProxy.sharedInstance.libMessage
-
-    private struct PayloadHeaderOld {                                         // struct to mimic payload layout
-        var firstBinFreq                        : UInt64                        // 8 bytes
-        var binBandwidth                        : UInt64                        // 8 bytes
-        var lineDuration                        : UInt32                        // 4 bytes
-        var numberOfBins                        : UInt16                        // 2 bytes
-        var lineHeight                          : UInt16                        // 2 bytes
-        var receivedFrame                       : UInt32                        // 4 bytes
-        var autoBlackLevel                      : UInt32                        // 4 bytes
-    }
-
-    private struct PayloadHeader {                                            // struct to mimic payload layout
-        var firstBinFreq                        : UInt64                        // 8 bytes
-        var binBandwidth                        : UInt64                        // 8 bytes
-        var lineDuration                        : UInt32                        // 4 bytes
-        var numberOfBins                        : UInt16                        // 2 bytes
-        var height                              : UInt16                        // 2 bytes
-        var receivedFrame                       : UInt32                        // 4 bytes
-        var autoBlackLevel                      : UInt32                        // 4 bytes
-        var totalBins                           : UInt16                        // 2 bytes
-        var firstBin                            : UInt16                        // 2 bytes
-    }
+    public var firstBinFreq: CGFloat = 0.0  // Frequency of first Bin (Hz)
+    public var binBandwidth: CGFloat = 0.0  // Bandwidth of a single bin (Hz)
+    public var lineDuration  = 0            // Duration of this line (ms)
+    public var binsInThisFrame = 0          // Number of bins
+    public var height = 0                   // Height of frame (pixels)
+    public var receivedFrame = 0            // Time code
+    public var autoBlackLevel: UInt32 = 0   // Auto black level
+    public var totalBins = 0                //
+    public var startingBin = 0              //
+    public var bins = [UInt16]()            // Array of bin values
 
     // ----------------------------------------------------------------------------
     // MARK: - Initialization
@@ -304,73 +331,5 @@ public struct WaterfallFrame {
     public init(frameSize: Int) {
         // allocate the bins array
         self.bins = [UInt16](repeating: 0, count: frameSize)
-    }
-
-    // ----------------------------------------------------------------------------
-    // MARK: - Public methods
-
-    /// Accumulate Vita object(s) into a WaterfallFrame
-    ///
-    /// - Parameter vita:         incoming Vita object
-    /// - Returns:                true if entire frame processed
-    ///
-//    public mutating func accumulate(version: Version, vita: Vita, expectedFrame: inout Int) -> Bool {
-    public mutating func accumulate(vita: Vita, expectedFrame: inout Int) -> Bool {
-        // 2.3.x or greater
-        // Bins are just beyond the payload
-        _byteOffsetToBins = MemoryLayout<PayloadHeader>.size
-        
-        vita.payloadData.withUnsafeBytes { ptr in
-            
-            // map the payload to the New Payload struct
-            let hdr = ptr.bindMemory(to: PayloadHeader.self)
-            
-            // byte swap and convert each payload component
-            firstBinFreq = CGFloat(CFSwapInt64BigToHost(hdr[0].firstBinFreq)) / 1.048576E6
-            binBandwidth = CGFloat(CFSwapInt64BigToHost(hdr[0].binBandwidth)) / 1.048576E6
-            lineDuration = Int( CFSwapInt32BigToHost(hdr[0].lineDuration) )
-            binsInThisFrame = Int( CFSwapInt16BigToHost(hdr[0].numberOfBins) )
-            height = Int( CFSwapInt16BigToHost(hdr[0].height) )
-            receivedFrame = Int( CFSwapInt32BigToHost(hdr[0].receivedFrame) )
-            autoBlackLevel = CFSwapInt32BigToHost(hdr[0].autoBlackLevel)
-            totalBins = Int( CFSwapInt16BigToHost(hdr[0].totalBins) )
-            startingBin = Int( CFSwapInt16BigToHost(hdr[0].firstBin) )
-        }
-
-        // validate the packet (could be incomplete at startup)
-        if totalBins == 0 { return false }
-        if startingBin + binsInThisFrame > totalBins { return false }
-
-        // initial frame?
-        if expectedFrame == -1 { expectedFrame = receivedFrame }
-
-        switch (expectedFrame, receivedFrame) {
-
-        case (let expected, let received) where received < expected:
-            // from a previous group, ignore it
-            _log("Waterfall delayed frame(s) ignored: expected = \(expected), received = \(received)", .warning, #function, #file, #line)
-            return false
-
-        case (let expected, let received) where received > expected:
-            // from a later group, jump forward
-            _log("Waterfall missing frame(s) skipped: expected = \(expected), received = \(received)", .warning, #function, #file, #line)
-            expectedFrame = received
-            fallthrough
-
-        default:
-            // received == expected
-            vita.payloadData.withUnsafeBytes { ptr in
-                // Swap the byte ordering of the data & place it in the bins
-                for i in 0..<binsInThisFrame {
-                    bins[i+startingBin] = CFSwapInt16BigToHost( ptr.load(fromByteOffset: _byteOffsetToBins + (2 * i), as: UInt16.self) )
-                }
-            }
-            binsInThisFrame += startingBin
-
-            // increment the frame count if the entire frame has been accumulated
-            if binsInThisFrame == totalBins { expectedFrame += 1 }
-        }
-        // return true if the entire frame has been accumulated
-        return binsInThisFrame == totalBins
     }
 }

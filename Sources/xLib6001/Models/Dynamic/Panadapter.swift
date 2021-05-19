@@ -33,8 +33,10 @@ public final class Panadapter: ObservableObject, Identifiable {
 
     @Published public var antList = [String]()
     @Published public var clientHandle: Handle = 0
+    @Published public var dbmValues = [LegendValue]()
     @Published public var delegate: StreamHandler?
     @Published public var fillLevel: Int = 0
+    @Published public var freqValues = [LegendValue]()
     @Published public var isStreaming = false
     @Published public var maxBw: Hz = 0
     @Published public var minBw: Hz = 0
@@ -103,6 +105,13 @@ public final class Panadapter: ObservableObject, Identifiable {
     public private(set) var droppedPackets = 0
     public private(set) var packetFrame = -1
 
+    public struct LegendValue: Identifiable {
+        public var id: CGFloat         // relative position 0...1
+        public var label: String       // value to display
+        public var value: CGFloat      // actual value
+        public var lineCount: CGFloat
+    }
+
     // ----------------------------------------------------------------------------
     // MARK: - Internal types
 
@@ -166,6 +175,11 @@ public final class Panadapter: ObservableObject, Identifiable {
     private var _frames = [PanadapterFrame]()
     private var _suppress = false
 
+    private var _dbmStep: CGFloat = 10
+    private var _dbmFormat = "%3.0f"
+    private var _freqStep: CGFloat = 100_000
+    private var _freqFormat = "%2.3f"
+
     // ------------------------------------------------------------------------------
     // MARK: - Initialization
 
@@ -199,6 +213,44 @@ public final class Panadapter: ObservableObject, Identifiable {
         DispatchQueue.main.async { self.rfGainHigh = rfGainInfo[1].iValue }
         DispatchQueue.main.async { self.rfGainStep = rfGainInfo[2].iValue }
     }
+
+
+
+    func calcDbmValues() -> [LegendValue] {
+        var dbmValues = [LegendValue]()
+
+        var value = maxDbm
+        let lineCount = (maxDbm - minDbm) / _dbmStep
+
+        dbmValues.append( LegendValue(id: 0, label: String(format: _dbmFormat, value), value: value, lineCount: lineCount) )
+        repeat {
+            let next = value - _dbmStep
+            value = next < minDbm ? minDbm : next
+            let position = (maxDbm - value) / (maxDbm - minDbm)
+            dbmValues.append( LegendValue(id: position, label: String(format: _dbmFormat, value), value: value, lineCount: lineCount) )
+        } while value != minDbm
+        return dbmValues
+    }
+
+    func calcFreqValues() -> [LegendValue] {
+        var freqValues = [LegendValue]()
+
+        let maxFreq = CGFloat(center + (bandwidth/2))
+        let minFreq = CGFloat(center - (bandwidth/2))
+        var value = maxFreq
+        let lineCount = (maxFreq - minFreq) / _freqStep
+
+        freqValues.append( LegendValue(id: 0, label: String(format: _freqFormat, value), value: value, lineCount: lineCount) )
+        repeat {
+            let next = value - _freqStep
+            value = next < minFreq ? minFreq : next
+            let position = (maxFreq - value) / (maxFreq - minFreq)
+            freqValues.append( LegendValue(id: position, label: String(format: _freqFormat, value), value: value, lineCount: lineCount) )
+        } while value != minFreq
+        return freqValues
+    }
+
+
 
     // ----------------------------------------------------------------------------
     // MARK: - Public Command methods
@@ -298,9 +350,14 @@ extension Panadapter: DynamicModelWithStream {
             case .antList:                antList = property.value.list
             case .average:                average = property.value.iValue
             case .band:                   band = property.value
-            case .bandwidth:              bandwidth = property.value.mhzToHz
+            case .bandwidth:
+                bandwidth = property.value.mhzToHz
+                freqValues = calcFreqValues()
             case .bandZoomEnabled:        bandZoomEnabled = property.value.bValue
-            case .center:                 center = property.value.mhzToHz
+            case .center:
+                center = property.value.mhzToHz
+                dbmValues = calcDbmValues()
+                freqValues = calcFreqValues()
             case .clientHandle:           clientHandle = property.value.handle ?? 0
             case .daxIq:                  daxIqChannel = property.value.iValue
             case .daxIqChannel:           daxIqChannel = property.value.iValue

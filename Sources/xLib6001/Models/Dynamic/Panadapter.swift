@@ -177,7 +177,7 @@ public final class Panadapter: ObservableObject, Identifiable {
 
     private var _dbmStep: CGFloat = 10
     private var _dbmFormat = "%3.0f"
-    private var _freqStep: CGFloat = 100_000
+    private var _freqStep: CGFloat = 10_000
     private var _freqFormat = "%2.3f"
 
     // ------------------------------------------------------------------------------

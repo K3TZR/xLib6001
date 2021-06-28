@@ -179,7 +179,7 @@ extension DaxMicAudioStream: DynamicModelWithStream {
     ///
     func vitaProcessor(_ vita: Vita) {
         if isStreaming == false {
-            isStreaming = true
+            DispatchQueue.main.async { self.isStreaming = true }
             // log the start of the stream
             _log("DaxMicAudio Stream started: \(id.hex)", .info, #function, #file, #line)
         }

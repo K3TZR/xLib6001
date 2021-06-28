@@ -177,7 +177,7 @@ extension RemoteRxAudioStream: DynamicModelWithStream {
         // FIXME: This assumes Opus encoded audio
 
         if isStreaming == false {
-            isStreaming = true
+            DispatchQueue.main.async { self.isStreaming = true }
             // log the start of the stream
             _log("RemoteRxAudio Stream started: \(id.hex)", .info, #function, #file, #line)
         }

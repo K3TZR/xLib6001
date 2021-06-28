@@ -237,7 +237,7 @@ extension Waterfall: DynamicModelWithStream {
     ///   - vita:       a Vita struct
     func vitaProcessor(_ vita: Vita) {
         if isStreaming == false {
-            isStreaming = true
+            DispatchQueue.main.async { self.isStreaming = true }
             // log the start of the stream
             _log("Waterfall Stream started: \(id.hex)", .info, #function, #file, #line)
         }

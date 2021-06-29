@@ -275,6 +275,8 @@ public final class Api {
             } else {
                 // bind a UDP port for the Streams
                 if udp.bind(activeRadio!.packet, clientHandle: connectionHandle) == false { tcp.disconnect() }
+
+                // FIXME: clientHandle is not used by bind????
             }
 
         case .wanHandleValidated (let success):

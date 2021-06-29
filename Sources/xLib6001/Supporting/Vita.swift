@@ -40,8 +40,8 @@ public class Vita {
     // ----------------------------------------------------------------------------
     // MARK: - Static properties
 
-    //  static let DiscoveryStreamId              : UInt32 = 0x00000800
     // Flex specific codes
+    static let DiscoveryStreamId              : UInt32 = 0x00000800
     static let kFlexOui                       : UInt32 = 0x1c2d
     static let kOuiMask                       : UInt32 = 0x00ffffff
     static let kFlexInformationClassCode      : UInt32 = 0x534c
@@ -115,47 +115,6 @@ public class Vita {
         case upnpSupported              = "upnp_supported"              // smartlink only
         case wanConnected               = "wan_connected"               // Local only
     }
-
-    // ----------------------------------------------------------------------------
-    // MARK: - Class methods
-
-    //  /// Create a Data type containing a Vita Discovery stream
-    //  ///
-    //  /// - Parameter payload:        the Discovery payload (as an array of String)
-    //  /// - Returns:                  a Data type containing a Vita Discovery stream
-    //  ///
-    //  public class func discovery(payload: [String]) -> Data? {
-    //
-    //    // create a new Vita class (w/defaults & extDataWithStream / Discovery)
-    //    let vita = Vita(type: .discovery, streamId: Vita.DiscoveryStreamId)
-    //
-    //    // concatenate the strings, separated by space
-    //    let payloadString = payload.joined(separator: " ")
-    //
-    //    // calculate the actual length of the payload (in bytes)
-    //    vita.payloadSize = payloadString.lengthOfBytes(using: .ascii)
-    //
-    //    //        // calculate the number of UInt32 that can contain the payload bytes
-    //    //        let payloadWords = Int((Float(vita.payloadSize) / Float(MemoryLayout<UInt32>.size)).rounded(.awayFromZero))
-    //    //        let payloadBytes = payloadWords * MemoryLayout<UInt32>.size
-    //
-    //    // create the payload array at the appropriate size (always a multiple of UInt32 size)
-    //    var payloadArray = [UInt8](repeating: 0x20, count: vita.payloadSize)
-    //
-    //    // packet size is Header + Payload (no Trailer)
-    //    vita.packetSize = vita.payloadSize + MemoryLayout<VitaHeader>.size
-    //
-    //    // convert the payload to an array of UInt8
-    //    let cString = payloadString.cString(using: .ascii)!
-    //    for i in 0..<cString.count - 1 {
-    //      payloadArray[i] = UInt8(cString[i])
-    //    }
-    //    // give the Vita struct a pointer to the payload
-    //    vita.payloadData = payloadArray
-    //
-    //    // return the encoded Vita class as Data
-    //    return Vita.encodeAsData(vita)
-    //  }
 
     /// Decode a Data type into a Vita class
     /// - Parameter data:         a Data type containing a Vita stream
@@ -325,80 +284,6 @@ public class Vita {
         return data
     }
 
-    /// Parse a Vita class containing a Discovery broadcast
-    /// - Returns:        a RadioParameters struct (or nil)
-    public class func parseVitaDiscovery(_ vita: Vita) -> DiscoveryPacket? {
-        // is this a Discovery packet?
-        if vita.classIdPresent && vita.classCode == .discovery {
-            // Payload is a series of strings of the form <key=value> separated by ' ' (space)
-            var payloadData = NSString(bytes: vita.payloadData, length: vita.payloadSize, encoding: String.Encoding.ascii.rawValue)! as String
-
-            // eliminate any Nulls at the end of the payload
-            payloadData = payloadData.trimmingCharacters(in: CharacterSet(charactersIn: "\0"))
-
-            return  ParseDiscovery( payloadData.keyValuesArray() )
-        }
-        return nil
-    }
-
-    public class func ParseDiscovery(_ properties: KeyValuesArray) -> DiscoveryPacket? {
-        // YES, create a minimal packet with now as "lastSeen"
-        var packet = DiscoveryPacket()
-
-        // process each key/value pair, <key=value>
-        for property in properties {
-            // check for unknown Keys
-            guard let token = DiscoveryTokens(rawValue: property.key) else {
-                // log it and ignore the Key
-                LogProxy.sharedInstance.libMessage("Unknown Discovery token - \(property.key) = \(property.value)", .warning, #function, #file, #line)
-                continue
-            }
-            switch token {
-
-            case .availableClients:           packet.availableClients = property.value.iValue      // newApi only
-            case .availablePanadapters:       packet.availablePanadapters = property.value.iValue  // newApi only
-            case .availableSlices:            packet.availableSlices = property.value.iValue       // newApi only
-            case .callsign:                   packet.callsign = property.value
-            case .discoveryVersion:           packet.discoveryVersion = property.value             // local only
-            case .firmwareVersion:            packet.firmwareVersion = property.value
-            case .fpcMac:                     packet.fpcMac = property.value                       // local only
-            case .guiClientHandles:           packet.guiClientHandles = property.value             // newApi only
-            case .guiClientHosts:             packet.guiClientHosts = property.value               // newApi only
-            case .guiClientIps:               packet.guiClientIps = property.value                 // newApi only
-            case .guiClientPrograms:          packet.guiClientPrograms = property.value            // newApi only
-            case .guiClientStations:          packet.guiClientStations = property.value            // newApi only
-            case .inUseHost:                  packet.inUseHost = property.value                    // deprecated in newApi
-            case .inUseHostWan:               packet.inUseHost = property.value                    // deprecated in newApi
-            case .inUseIp:                    packet.inUseIp = property.value                      // deprecated in newApi
-            case .inUseIpWan:                 packet.inUseIp = property.value                      // deprecated in newApi
-            case .licensedClients:            packet.licensedClients = property.value.iValue       // newApi only
-            case .maxLicensedVersion:         packet.maxLicensedVersion = property.value
-            case .maxPanadapters:             packet.maxPanadapters = property.value.iValue        // newApi only
-            case .maxSlices:                  packet.maxSlices = property.value.iValue             // newApi only
-            case .model:                      packet.model = property.value
-            case .nickname:                   packet.nickname = property.value
-            case .port:                       packet.port = property.value.iValue
-            case .publicIp:                   packet.publicIp = property.value
-            case .publicIpWan:                packet.publicIp = property.value
-            case .publicTlsPort:              packet.publicTlsPort = property.value.iValue         // smartlink only
-            case .publicUdpPort:              packet.publicUdpPort = property.value.iValue         // smartlink only
-            case .publicUpnpTlsPort:          packet.publicUpnpTlsPort = property.value.iValue     // smartlink only
-            case .publicUpnpUdpPort:          packet.publicUpnpUdpPort = property.value.iValue     // smartlink only
-            case .radioName:                  packet.nickname = property.value
-            case .radioLicenseId:             packet.radioLicenseId = property.value
-            case .requiresAdditionalLicense:  packet.requiresAdditionalLicense = property.value.bValue
-            case .serialNumber:               packet.serialNumber = property.value
-            case .status:                     packet.status = property.value
-            case .upnpSupported:              packet.upnpSupported = property.value.bValue         // smartlink only
-            case .wanConnected:               packet.wanConnected = property.value.bValue          // local only
-
-            // satisfy the switch statement, not a real token
-            case .lastSeen:                   break
-            }
-        }
-        return packet
-    }
-
     // ----------------------------------------------------------------------------
     // MARK: - Initialization
 
@@ -416,9 +301,10 @@ public class Vita {
     convenience init(type: VitaTypes, streamId: UInt32, reducedBW: Bool = false) {
         switch type {
 
-        case .netCW:    self.init(packetType: .extDataWithStream, classCode: .daxAudio, streamId: streamId, tsi: .other, tsf: .sampleCount)
-        case .opusTxV2: self.init(packetType: .extDataWithStream, classCode: .daxAudio, streamId: streamId, tsi: .other, tsf: .sampleCount)
-        case .opusTx:   self.init(packetType: .extDataWithStream, classCode: .opus, streamId: streamId, tsi: .other, tsf: .sampleCount)
+        case .discovery:    self.init(packetType: .extDataWithStream, classCode: .discovery, streamId: streamId, tsi: .other, tsf: .sampleCount)
+        case .netCW:        self.init(packetType: .extDataWithStream, classCode: .daxAudio, streamId: streamId, tsi: .other, tsf: .sampleCount)
+        case .opusTxV2:     self.init(packetType: .extDataWithStream, classCode: .daxAudio, streamId: streamId, tsi: .other, tsf: .sampleCount)
+        case .opusTx:       self.init(packetType: .extDataWithStream, classCode: .opus, streamId: streamId, tsi: .other, tsf: .sampleCount)
         case .txAudio:
             var classCode = PacketClassCodes.daxAudio
             if reducedBW { classCode = PacketClassCodes.daxReducedBw }
@@ -500,6 +386,7 @@ public class Vita {
 extension Vita {
     /// Types
     enum VitaTypes {
+        case discovery
         case netCW
         case opusTxV2
         case opusTx

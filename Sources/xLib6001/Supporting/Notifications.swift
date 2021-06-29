@@ -51,6 +51,7 @@ public enum NotificationType : String {
     case globalProfileUpdated
 
     case guiClientHasBeenAdded
+    case guiClientWillBeRemoved
     case guiClientHasBeenRemoved
     case guiClientHasBeenUpdated
 

@@ -397,7 +397,7 @@ public final class WanServer: NSObject, ObservableObject {
         var currentPacketList = [DiscoveryPacket]()
         
         for message in radioMessages where message != "" {
-            if var packet = Vita.ParseDiscovery( message.keyValuesArray() ) {
+            if var packet = Discovery.ParseDiscovery( message.keyValuesArray() ) {
                 // now continue to fill the radio parameters
                 // favor using the manually defined forwarded ports if they are defined
                 if (packet.publicTlsPort != -1 && packet.publicUdpPort != -1) {

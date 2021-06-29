@@ -8,282 +8,251 @@
 import Foundation
 import CocoaAsyncSocket
 
+public protocol VitaSupport {
+    static func discovery(payload: [String]) -> Data?
+    static func parseVitaDiscovery(_ vita: Vita) -> DiscoveryPacket?
+}
+
 /// Discovery implementation
 ///
 ///      listens for the udp broadcasts announcing the presence of a Flex-6000
 ///      Radio, reports changes to the list of available radios
 ///
-public final class Discovery: NSObject {
+public final class Discovery: NSObject, ObservableObject {
+    // ----------------------------------------------------------------------------
+    // MARK: - Static properties
+
+    static let port: UInt16 = 4992
+    static let checkInterval = 1
+    static let notSeenInterval: TimeInterval = 10.0
+
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
     
-    public var radios: [Radio] {
-        get { Api.objectQ.sync { _radios } }
-        set { Api.objectQ.sync(flags: .barrier) {_radios = newValue }}}
+    @Published public var radios = [Radio]()
 
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
     
-    private let _api = Api.sharedInstance
-    private let _log = LogProxy.sharedInstance.libMessage
-    private var _timeoutTimer: DispatchSourceTimer!
-    private var _udpSocket: GCDAsyncUdpSocket?
-
-    // GCD Queues
-    private let _timerQ = DispatchQueue(label: "Discovery" + ".timerQ")
-    private let _udpQ   = DispatchQueue(label: "Discovery" + ".udpQ")
-
-    // ----------------------------------------------------------------------------
-    // *** Backing properties (DO NOT ACCESS) ***
-
-    private var _discoveryPackets = [DiscoveryPacket]()
-    private var _radios = [Radio]()
+    private var _timer: DispatchSourceTimer!
+    private var _udpSocket: GCDAsyncUdpSocket!
+    private let _udpQ = DispatchQueue(label: "Discovery" + ".udpQ")
 
     // ----------------------------------------------------------------------------
     // MARK: - Singleton
     
-    /// Provide access to the API singleton
-    ///
     public static var sharedInstance = Discovery()
     
-    /// Initialize Discovery
-    /// - Parameters:
-    ///   - discoveryPort:        port number
-    ///   - checkInterval:        how often to check
-    ///   - notSeenInterval:      timeout interval
-    ///
-    private init(discoveryPort: UInt16 = 4992, checkInterval: TimeInterval = 1.0, notSeenInterval: TimeInterval = 10.0) {
+    private init(port: UInt16 = Discovery.port, checkInterval: Int = Discovery.checkInterval, notSeenInterval: TimeInterval = Discovery.notSeenInterval) {
         super.init()
-        
-        // create a Udp socket
-        _udpSocket = GCDAsyncUdpSocket( delegate: self, delegateQueue: _udpQ )
-        
-        // if created
-        if let sock = _udpSocket {
-            // set socket options
-            sock.setPreferIPv4()
-            sock.setIPv6Enabled(false)
-            
-            // enable port reuse (allow multiple apps to use same port)
-            do {
-                try sock.enableReusePort(true)
-            } catch let error as NSError {
-                _log("Discovery, port reuse not enabled: \(error.localizedDescription)", .error, #function, #file, #line)
-                fatalError("Discovery, port reuse not enabled: \(error.localizedDescription)")
-            }
-            
-            // bind the socket to the Flex Discovery Port
-            do {
-                try sock.bind(toPort: discoveryPort)
-            }
-            catch let error as NSError {
-                _log("Discovery, Bind to port error: \(error.localizedDescription)", .error, #function, #file, #line)
-                fatalError("Discovery, Bind to port error: \(error.localizedDescription)")
-            }
-            
-            do {
-                // attempt to start receiving
-                try sock.beginReceiving()
-                
-                // create the timer's dispatch source
-                _timeoutTimer = DispatchSource.makeTimerSource(queue: _timerQ)
-                
-                // Set timer
-                _timeoutTimer.schedule(deadline: DispatchTime.now(), repeating: checkInterval, leeway: .milliseconds(250))
-                
-                // set the event handler
-                _timeoutTimer.setEventHandler { [ unowned self] in
-                    var deleteList = [Int]()
-                    
-                    // check the timestamps of the Discovered radios
-                    for i in 0..<self.radios.count {
-                        if !self.radios[i].packet.isWan {
-                            let interval = abs(self.radios[i].packet.lastSeen.timeIntervalSinceNow)
-                            
-                            // is it past expiration?
-                            if interval > notSeenInterval {
-                                // YES, add to the delete list
-                                deleteList.append(i)
-                                _log("Discovery, radio will be removed: Interval \(String(format: "%0.1f", interval)) > NotSeenInterval \(String(format: "%0.1f", notSeenInterval))", .info, #function, #file, #line)
-                            }
-                        }
-                    }
-                    // are there any deletions?
-                    if deleteList.count > 0 {
-                        // YES, remove the Radio(s)
-                        for i in deleteList.reversed() {
-                            let nickname = self.radios[i].packet.nickname
-                            let firmwareVersion = self.radios[i].packet.firmwareVersion
-                            let connectionString = self.radios[i].packet.connectionString
-                            
-                            // remove a Radio
-                            self.radios.remove(at: i)
-                            
-                            self._log("Discovery, radio removed: \(nickname) v\(firmwareVersion) \(connectionString)", .info, #function, #file, #line)
-                        }
-                        // send the current list of radios to all observers
-                        NC.post(.discoveredRadios, object: self.radios as Any?)
-                    }
-                }
-                
-            } catch let error as NSError {
-                _log("Discovery, receiving error: \(error.localizedDescription)", .error, #function, #file, #line)
-                fatalError("Discovery, receiving error: \(error.localizedDescription)")
-            }
-            // start the timer
-            _timeoutTimer.resume()
+
+        // create a Udp socket and set options
+        let _udpSocket = GCDAsyncUdpSocket( delegate: self, delegateQueue: _udpQ )
+        _udpSocket.setPreferIPv4()
+        _udpSocket.setIPv6Enabled(false)
+
+        do {
+            try _udpSocket.enableReusePort(true)
+            try _udpSocket.bind(toPort: port)
+            try _udpSocket.beginReceiving()
+
+        } catch let error as NSError {
+            fatalError("Discovery: \(error.localizedDescription)")
         }
+        // setup a timer to watch for Radio timeouts
+        _timer = DispatchSource.makeTimerSource(queue: _udpQ)
+        _timer.schedule(deadline: DispatchTime.now(), repeating: .seconds(checkInterval))
+        _timer.setEventHandler { [self] in
+            removeRadios(condition: {$0.isWan == false && abs($0.lastSeen.timeIntervalSinceNow) > Discovery.notSeenInterval} )
+        }
+        // start the timer
+        _timer.resume()
     }
-    
+
     deinit {
-        _timeoutTimer?.cancel()
+        _timer?.cancel()
         _udpSocket?.close()
     }
-    
+
     // ----------------------------------------------------------------------------
     // MARK: - Public methods
-    
-    /// Pause the collection of UDP broadcasts
-    public func pause() {
-        if let sock = _udpSocket {
-            // pause receiving UDP broadcasts
-            sock.pauseReceiving()
-            
-            // pause the timer
-            _timeoutTimer.suspend()
-        }
-    }
-    /// Resume the collection of UDP broadcasts
-    public func resume() {
-        if let sock = _udpSocket {
-            // restart receiving UDP broadcasts
-            try! sock.beginReceiving()
-            
-            // restart the timer
-            _timeoutTimer.resume()
-        }
-    }
-    
-    public func defaultFound(_ defaultString: String?) -> Radio? {
-        let components = defaultString!.split(separator: ".")
-        if components.count == 2 {
-            let isWan = (components[0] == "wan")
-            return radios.first(where: { $0.packet.serialNumber == components[1] && $0.packet.isWan == isWan} )
-        }
-        return nil
-    }
 
-    /// force a Notification containing a list of current radios
-    public func updateDiscoveredRadios() {
-        
-        // send the current list of radios to all observers
-        NC.post(.discoveredRadios, object: self.radios as Any?)
-    }
-
-    /// Remove all SmartLink redios
+    /// Convenience func for Smartlink Radio removal
     public func removeSmartLinkRadios() {
+        removeRadios(condition: {$0.isWan} )
+    }
+
+    /// Remove radios
+    /// - Parameter condition:  a closure defining the condition for removal
+    public func removeRadios(condition: (Radio) -> Bool) {
         var deleteList = [Int]()
-        
-        for (i, radio) in radios.enumerated() where radio.packet.isWan {
+
+        for (i, radio) in radios.enumerated() where condition(radio) {
             deleteList.append(i)
-            _log("Discovery, radio removed: \(radio.packet.nickname) v\(radio.packet.firmwareVersion) \(radio.packet.connectionString)", .info, #function, #file, #line)
+            NC.post(.radioWillBeRemoved, object: radio as Any?)
         }
         for i in deleteList.reversed() {
-            radios.remove(at: i)
-        }
-        updateDiscoveredRadios()
-    }
-    
-    // ----------------------------------------------------------------------------
-    // MARK: - Private methods
-    
-    /// Parse the csv fields in a Discovery packet
-    /// - Parameter packet:       the packet to parse
-    ///
-    private func parseGuiClients( _ packet: DiscoveryPacket) -> [GuiClient] {
-        var guiClients = [GuiClient]()
-        
-        guard packet.guiClientPrograms != "" && packet.guiClientStations != "" && packet.guiClientHandles != "" else { return guiClients }
-        
-        let programs  = packet.guiClientPrograms.components(separatedBy: ",")
-        let stations  = packet.guiClientStations.components(separatedBy: ",")
-        let handles   = packet.guiClientHandles.components(separatedBy: ",")
-        //    let hosts     = currentPacket.guiClientHosts.components(separatedBy: ",")
-        //    let ips       = currentPacket.guiClientIps.components(separatedBy: ",")
-        
-        guard programs.count == handles.count && stations.count == handles.count else { return guiClients }
-        
-        for i in 0..<handles.count {
-            // valid handle and non-blank station
-            if let handle = handles[i].handle, stations[i] != "", programs[i] != "" {
-                
-                guiClients.append( GuiClient(handle: handle,
-                                             station: stations[i],
-                                             program: programs[i]))
-            }
-        }
-        return guiClients
-    }
-    
-    private func processNewAdditions(_ newRadio: Radio) {
-        // log and notify for GuiClient addition(s)
-        for client in newRadio.guiClients {
-            _log("Discovery, guiClient added:   \(client.handle.hex), \(client.station), \(newRadio.packet.connectionString)", .info, #function, #file, #line)
-            NC.post(.guiClientHasBeenAdded, object: client as Any?)
-        }
-    }
-    
-    private func processAdditions(_ newGuiClients: [GuiClient], _ index: Int) {
-        // for each GuiClient in the new packet
-        for client in newGuiClients {
-            // is it known by the Radio?
-            if findGuiClient(by: client.handle, in: radios[index].guiClients) == nil {
-                // NO, it must be added to the Radio
-                radios[index].guiClients.append(client)
-                
-                // log and notify for GuiClient addition
-                _log("Discovery, guiClient added:   \(client.handle.hex), \(client.station), \(radios[index].packet.connectionString)", .info, #function, #file, #line)
-                NC.post(.guiClientHasBeenAdded, object: client as Any?)
+            DispatchQueue.main.async { [self]  in
+                let removed = radios.remove(at: i)
+                NC.post(.radioHasBeenRemoved, object: removed as Any?)
             }
         }
     }
-    
-    private func findGuiClient(by handle: Handle, in guiClients: [GuiClient]) -> Int? {
-        // find a GuiClient with the specified handle
-        for (i, client) in guiClients.enumerated() where client.handle == handle {
-            return i    // found
-        }
-        return nil    // not found
-    }
-    
-    private func processRemovals(_ newGuiClients: [GuiClient], _ index: Int) {
-        // for each GuiClient currently known by the Radio
-        for (i, client) in radios[index].guiClients.enumerated().reversed() {
-            // is it in the new packet?
-            if findGuiClient(by: client.handle, in: newGuiClients) == nil {
-                // NO, it must be removed from the Radio
-                let station = client.station
-                let handle = client.handle
-                radios[index].guiClients.remove(at: i)
-                
-                // log and notify for GuiClient removal
-                _log("Discovery, guiClient removed: \(handle.hex), \(station), \(radios[index].packet.connectionString)", .info, #function, #file, #line)
-                NC.post(.guiClientHasBeenRemoved, object: client as Any?)
-            }
-        }
+}
+
+extension Discovery: VitaSupport {
+    enum DiscoveryTokens : String {
+        case lastSeen                   = "last_seen"                   // not a real token
+
+        case availableClients           = "available_clients"           // newApi, local only
+        case availablePanadapters       = "available_panadapters"       // newApi, local only
+        case availableSlices            = "available_slices"            // newApi, local only
+        case callsign
+        case discoveryVersion           = "discovery_protocol_version"  // local only
+        case firmwareVersion            = "version"
+        case fpcMac                     = "fpc_mac"                     // local only
+        case guiClientHandles           = "gui_client_handles"          // newApi
+        case guiClientHosts             = "gui_client_hosts"            // newApi
+        case guiClientIps               = "gui_client_ips"              // newApi
+        case guiClientPrograms          = "gui_client_programs"         // newApi
+        case guiClientStations          = "gui_client_stations"         // newApi
+        case inUseHost                  = "inuse_host"                  // deprecated -- local only
+        case inUseHostWan               = "inusehost"                   // deprecated -- smartlink only
+        case inUseIp                    = "inuse_ip"                    // deprecated -- local only
+        case inUseIpWan                 = "inuseip"                     // deprecated -- smartlink only
+        case licensedClients            = "licensed_clients"            // newApi, local only
+        case maxLicensedVersion         = "max_licensed_version"
+        case maxPanadapters             = "max_panadapters"             // newApi, local only
+        case maxSlices                  = "max_slices"                  // newApi, local only
+        case model
+        case nickname                   = "nickname"                    // local only
+        case port                                                       // local only
+        case publicIp                   = "ip"                          // local only
+        case publicIpWan                = "public_ip"                   // smartlink only
+        case publicTlsPort              = "public_tls_port"             // smartlink only
+        case publicUdpPort              = "public_udp_port"             // smartlink only
+        case publicUpnpTlsPort          = "public_upnp_tls_port"        // smartlink only
+        case publicUpnpUdpPort          = "public_upnp_udp_port"        // smartlink only
+        case radioLicenseId             = "radio_license_id"
+        case radioName                  = "radio_name"                  // smartlink only
+        case requiresAdditionalLicense  = "requires_additional_license"
+        case serialNumber               = "serial"
+        case status
+        case upnpSupported              = "upnp_supported"              // smartlink only
+        case wanConnected               = "wan_connected"               // Local only
     }
 
-    /// Find a radio's Discovery packet
-    /// - Parameter serialNumber:     a radio serial number
-    /// - Returns:                    the index of the radio in Discovered Radios
-    ///
-    private func findRadio(with serialNumber: String, and isWan: Bool) -> Int? {
-        // is the Radio already in the radios array?
-        for (i, radio) in radios.enumerated() {
-            // by serialNumber & isWan (same radio can be visible both locally and via SmartLink)
-            if radio.packet.serialNumber == serialNumber && radio.packet.isWan == isWan { return i }
+    /// Create a Data type containing a Vita Discovery stream
+    /// - Parameter payload:        the Discovery payload (as an array of String)
+    /// - Returns:                  a Data type containing a Vita Discovery stream
+    public class func discovery(payload: [String]) -> Data? {
+        // create a new Vita class (w/defaults & extDataWithStream / Discovery)
+        let vita = Vita(type: .discovery, streamId: Vita.DiscoveryStreamId)
+
+        // concatenate the strings, separated by space
+        let payloadString = payload.joined(separator: " ")
+
+        // calculate the actual length of the payload (in bytes)
+        vita.payloadSize = payloadString.lengthOfBytes(using: .ascii)
+
+        //        // calculate the number of UInt32 that can contain the payload bytes
+        //        let payloadWords = Int((Float(vita.payloadSize) / Float(MemoryLayout<UInt32>.size)).rounded(.awayFromZero))
+        //        let payloadBytes = payloadWords * MemoryLayout<UInt32>.size
+
+        // create the payload array at the appropriate size (always a multiple of UInt32 size)
+        var payloadArray = [UInt8](repeating: 0x20, count: vita.payloadSize)
+
+        // packet size is Header + Payload (no Trailer)
+        vita.packetSize = vita.payloadSize + MemoryLayout<VitaHeader>.size
+
+        // convert the payload to an array of UInt8
+        let cString = payloadString.cString(using: .ascii)!
+        for i in 0..<cString.count - 1 {
+            payloadArray[i] = UInt8(cString[i])
+        }
+        // give the Vita struct a pointer to the payload
+        vita.payloadData = payloadArray
+
+        // return the encoded Vita class as Data
+        return Vita.encodeAsData(vita)
+    }
+
+    /// - Returns:        a RadioParameters struct (or nil)
+
+
+    /// Parse a Vita class containing a Discovery broadcast
+    /// - Parameter vita:   a Vita packet
+    /// - Returns:          a DiscoveryPacket (or nil)
+    public class func parseVitaDiscovery(_ vita: Vita) -> DiscoveryPacket? {
+        // is this a Discovery packet?
+        if vita.classIdPresent && vita.classCode == .discovery {
+            // Payload is a series of strings of the form <key=value> separated by ' ' (space)
+            var payloadData = NSString(bytes: vita.payloadData, length: vita.payloadSize, encoding: String.Encoding.ascii.rawValue)! as String
+
+            // eliminate any Nulls at the end of the payload
+            payloadData = payloadData.trimmingCharacters(in: CharacterSet(charactersIn: "\0"))
+
+            return ParseDiscovery( payloadData.keyValuesArray() )
         }
         return nil
+    }
+
+    public class func ParseDiscovery(_ properties: KeyValuesArray) -> DiscoveryPacket? {
+        // YES, create a minimal packet with now as "lastSeen"
+        var packet = DiscoveryPacket()
+
+        // process each key/value pair, <key=value>
+        for property in properties {
+            // check for unknown Keys
+            guard let token = DiscoveryTokens(rawValue: property.key) else {
+                // log it and ignore the Key
+                //                LogProxy.sharedInstance.libMessage("Unknown Discovery token - \(property.key) = \(property.value)", .warning, #function, #file, #line)
+                continue
+            }
+            switch token {
+
+            case .availableClients:           packet.availableClients = property.value.iValue      // newApi only *#
+            case .availablePanadapters:       packet.availablePanadapters = property.value.iValue  // newApi only *#
+            case .availableSlices:            packet.availableSlices = property.value.iValue       // newApi only *#
+            case .callsign:                   packet.callsign = property.value                      // *#
+            case .discoveryVersion:           packet.discoveryVersion = property.value             // local only *
+            case .firmwareVersion:            packet.firmwareVersion = property.value               // *#
+            case .fpcMac:                     packet.fpcMac = property.value                       // local only *
+            case .guiClientHandles:           packet.guiClientHandles = property.value             // newApi only *#
+            case .guiClientHosts:             packet.guiClientHosts = property.value               // newApi only *#
+            case .guiClientIps:               packet.guiClientIps = property.value                 // newApi only *#
+            case .guiClientPrograms:          packet.guiClientPrograms = property.value            // newApi only *#
+            case .guiClientStations:          packet.guiClientStations = property.value            // newApi only *#
+            case .inUseHost:                  packet.inUseHost = property.value                    // deprecated in newApi *
+            case .inUseHostWan:               packet.inUseHost = property.value                    // deprecated in newApi
+            case .inUseIp:                    packet.inUseIp = property.value                      // deprecated in newApi *
+            case .inUseIpWan:                 packet.inUseIp = property.value                      // deprecated in newApi
+            case .licensedClients:            packet.licensedClients = property.value.iValue       // newApi only *
+            case .maxLicensedVersion:         packet.maxLicensedVersion = property.value            // *#
+            case .maxPanadapters:             packet.maxPanadapters = property.value.iValue        // newApi only *
+            case .maxSlices:                  packet.maxSlices = property.value.iValue             // newApi only *
+            case .model:                      packet.model = property.value                        // *#
+            case .nickname:                   packet.nickname = property.value                      // *#
+            case .port:                       packet.port = property.value.iValue                   // *
+            case .publicIp:                   packet.publicIp = property.value                      // *#
+            case .publicIpWan:                packet.publicIp = property.value
+            case .publicTlsPort:              packet.publicTlsPort = property.value.iValue         // smartlink only#
+            case .publicUdpPort:              packet.publicUdpPort = property.value.iValue         // smartlink only#
+            case .publicUpnpTlsPort:          packet.publicUpnpTlsPort = property.value.iValue     // smartlink only#
+            case .publicUpnpUdpPort:          packet.publicUpnpUdpPort = property.value.iValue     // smartlink only#
+            case .radioName:                  packet.nickname = property.value
+            case .radioLicenseId:             packet.radioLicenseId = property.value                // *#
+            case .requiresAdditionalLicense:  packet.requiresAdditionalLicense = property.value.bValue  // *#
+            case .serialNumber:               packet.serialNumber = property.value                  // *#
+            case .status:                     packet.status = property.value                        // *#
+            case .upnpSupported:              packet.upnpSupported = property.value.bValue         // smartlink only#
+            case .wanConnected:               packet.wanConnected = property.value.bValue          // local only *
+
+                // satisfy the switch statement, not a real token
+            case .lastSeen:                   break
+            }
+        }
+        return packet
     }
 }
 
@@ -299,314 +268,148 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
     ///   - data:           the Data received
     ///   - address:        the Address of the sender
     ///   - filterContext:  the FilterContext
-    ///
     public func udpSocket(_ sock: GCDAsyncUdpSocket, didReceive data: Data, fromAddress address: Data, withFilterContext filterContext: Any?) {
-        // VITA encoded Discovery packet?
+        // VITA packet?
         guard let vita = Vita.decodeFrom(data: data) else { return }
         
-        // parse vita to obtain a DiscoveryPacket
-        if let packet = Vita.parseVitaDiscovery(vita) {
-            processPacket(packet)
-        }
+        // YES, Discovery Packet?
+        guard let packet = Discovery.parseVitaDiscovery(vita) else { return }
+
+        // YES, process it
+        processPacket(packet)
     }
-    
-    func processPacket(_ newPacket: DiscoveryPacket) {
 
+    /// Add / Update a Radio
+    /// - Parameter packet:     a received DiscoveryPacket
+    func processPacket(_ packet: DiscoveryPacket) {
         DispatchQueue.main.async { [self] in
-
             // is this a known radio?
-            if let index = findRadio(with: newPacket.serialNumber, and: newPacket.isWan) {
-                // YES, known radio, update various properties
-                radios[index].packet.lastSeen = Date()
-                radios[index].packet.guiClientStations = newPacket.guiClientStations
-                radios[index].packet.guiClientPrograms = newPacket.guiClientPrograms
-                radios[index].packet.guiClientHandles = newPacket.guiClientHandles
-                radios[index].packet.status = newPacket.status
-
-                // update and notify for GuiClient additions / removals
-                let newGuiClients = parseGuiClients(newPacket)
-                processAdditions(newGuiClients, index)
-                processRemovals(newGuiClients, index)
+            if let index = radios.firstIndex(where: { $0.connectionString == packet.connectionString}) {
+                // YES, update it
+                updateRadio(radios[index], from: packet)
 
             } else {
-                // NO, previously unknown radio
-                let newRadio = Radio(newPacket)
-                newRadio.guiClients = parseGuiClients(newPacket)
-                radios.append( newRadio )
-
-                // notify for additions
-                processNewAdditions( newRadio )
-
-                // log and notify for Radio addition
-                _log("Discovery, radio added:   \(newPacket.nickname) v\(newPacket.firmwareVersion) \(newPacket.connectionString)", .info, #function, #file, #line)
-                NC.post(.discoveredRadios, object: radios as Any?)
+                // NO, add it
+                addRadio(from: packet )
             }
         }
     }
-}
 
-/// DiscoveryPacket class implementation
-///     Equatable by serial number & isWan
-///
-public struct DiscoveryPacket : Equatable, Hashable {
-
-    public init() {
-        lastSeen = Date() // now
-
-        publicTlsPort = -1
-        publicUdpPort = -1
-        isPortForwardOn = false
-        publicTlsPort = -1
-        publicUdpPort = -1
-        publicUpnpTlsPort = -1
-        publicUpnpUdpPort = -1
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(publicIp)
-    }
-    
     // ----------------------------------------------------------------------------
-    // MARK: - Public properties
+    // MARK: - GCDAsyncUdpSocketDelegate Private methods
 
-    public var lastSeen : Date
+    /// Add a new Radio
+    /// - Parameter packet:     a DiscoveryPacket
+    private func addRadio(from packet: DiscoveryPacket) {
+        let radio = Radio(packet)
 
-    public var availableClients = 0
-    public var availablePanadapters = 0
-    public var availableSlices = 0
-    public var callsign = ""
-    public var discoveryVersion = ""
-    public var firmwareVersion = ""
-    public var fpcMac = ""
-    public var guiClientHandles = ""
-    public var guiClientPrograms = ""
-    public var guiClientStations = ""
-    public var guiClientHosts = ""
-    public var guiClientIps = ""
-    public var inUseHost = ""
-    public var inUseIp = ""
-    public var licensedClients = 0
-    public var maxLicensedVersion = ""
-    public var maxPanadapters = 0
-    public var maxSlices = 0
-    public var model = ""
-    public var nickname = ""
-    public var port = 0
-    public var publicIp = ""
-    public var publicTlsPort = 0
-    public var publicUdpPort = 0
-    public var publicUpnpTlsPort = 0
-    public var publicUpnpUdpPort = 0
-    public var radioLicenseId = ""
-    public var requiresAdditionalLicense = false
-    public var serialNumber = ""
-    public var status = ""
-    public var upnpSupported = false
-    public var wanConnected = false
+        // update needed fields
+        radio.guiClients = parseGuiClients(packet)
+        updates(packet, radio)
 
-    // FIXME: Not really part of the DiscoveryPacket
-    public var isPortForwardOn = false
-    public var isWan = false
-    public var localInterfaceIP = ""
-//    public var lowBandwidthConnect: Bool {
-//        get { Api.objectQ.sync { _lowBandwidthConnect } }
-//        set { Api.objectQ.sync(flags: .barrier) {_lowBandwidthConnect = newValue }}}
-    public var negotiatedHolePunchPort = 0
-    public var requiresHolePunch = false
-    public var wanHandle = ""
+        // add it
+        radios.append(radio)
+        NC.post(.radioHasBeenAdded, object: radio as Any?)
 
-//    public var lastSeen : Date {
-//        get { Api.objectQ.sync { _lastSeen } }
-//        set { Api.objectQ.sync(flags: .barrier) {_lastSeen = newValue }}}
-//
-//    public var availableClients : Int {
-//        get { Api.objectQ.sync { _availableClients } }
-//        set { Api.objectQ.sync(flags: .barrier) {_availableClients = newValue }}}
-//    public var availablePanadapters: Int {
-//        get { Api.objectQ.sync { _availablePanadapters } }
-//        set { Api.objectQ.sync(flags: .barrier) {_availablePanadapters = newValue }}}
-//    public var availableSlices: Int {
-//        get { Api.objectQ.sync { _availableSlices } }
-//        set { Api.objectQ.sync(flags: .barrier) {_availableSlices = newValue }}}
-//    public var callsign: String {
-//        get { Api.objectQ.sync { _callsign } }
-//        set { Api.objectQ.sync(flags: .barrier) {_callsign = newValue }}}
-//    public var discoveryVersion: String {
-//        get { Api.objectQ.sync { _discoveryVersion } }
-//        set { Api.objectQ.sync(flags: .barrier) {_discoveryVersion = newValue }}}
-//    public var firmwareVersion: String {
-//        get { Api.objectQ.sync { _firmwareVersion } }
-//        set { Api.objectQ.sync(flags: .barrier) {_firmwareVersion = newValue }}}
-//    public var fpcMac: String {
-//        get { Api.objectQ.sync { _fpcMac } }
-//        set { Api.objectQ.sync(flags: .barrier) {_fpcMac = newValue }}}
-//    public var guiClientHandles: String {
-//        get { Api.objectQ.sync { _guiClientHandles } }
-//        set { Api.objectQ.sync(flags: .barrier) {_guiClientHandles = newValue }}}
-//    public var guiClientPrograms: String {
-//        get { Api.objectQ.sync { _guiClientPrograms } }
-//        set { Api.objectQ.sync(flags: .barrier) {_guiClientPrograms = newValue }}}
-//    public var guiClientStations: String {
-//        get { Api.objectQ.sync { _guiClientStations } }
-//        set { Api.objectQ.sync(flags: .barrier) {_guiClientStations = newValue }}}
-//    public var guiClientHosts: String {
-//        get { Api.objectQ.sync { _guiClientHosts } }
-//        set { Api.objectQ.sync(flags: .barrier) {_guiClientHosts = newValue }}}
-//    public var guiClientIps: String {
-//        get { Api.objectQ.sync { _guiClientIps } }
-//        set { Api.objectQ.sync(flags: .barrier) {_guiClientIps = newValue }}}
-//    public var inUseHost: String {
-//        get { Api.objectQ.sync { _inUseHost } }
-//        set { Api.objectQ.sync(flags: .barrier) {_inUseHost = newValue }}}
-//    public var inUseIp: String {
-//        get { Api.objectQ.sync { _inUseIp } }
-//        set { Api.objectQ.sync(flags: .barrier) {_inUseIp = newValue }}}
-//    public var licensedClients: Int {
-//        get { Api.objectQ.sync { _licensedClients } }
-//        set { Api.objectQ.sync(flags: .barrier) {_licensedClients = newValue }}}
-//    public var maxLicensedVersion: String {
-//        get { Api.objectQ.sync { _maxLicensedVersion } }
-//        set { Api.objectQ.sync(flags: .barrier) {_maxLicensedVersion = newValue }}}
-//    public var maxPanadapters: Int {
-//        get { Api.objectQ.sync { _maxPanadapters } }
-//        set { Api.objectQ.sync(flags: .barrier) {_maxPanadapters = newValue }}}
-//    public var maxSlices: Int {
-//        get { Api.objectQ.sync { _maxSlices } }
-//        set { Api.objectQ.sync(flags: .barrier) {_maxSlices = newValue }}}
-//    public var model: String {
-//        get { Api.objectQ.sync { _model } }
-//        set { Api.objectQ.sync(flags: .barrier) {_model = newValue }}}
-//    public var nickname: String {
-//        get { Api.objectQ.sync { _nickname } }
-//        set { Api.objectQ.sync(flags: .barrier) {_nickname = newValue }}}
-//    public var port: Int {
-//        get { Api.objectQ.sync { _port } }
-//        set { Api.objectQ.sync(flags: .barrier) {_port = newValue }}}
-//    public var publicIp: String {
-//        get { Api.objectQ.sync { _publicIp } }
-//        set { Api.objectQ.sync(flags: .barrier) {_publicIp = newValue }}}
-//    public var publicTlsPort: Int {
-//        get { Api.objectQ.sync { _publicTlsPort } }
-//        set { Api.objectQ.sync(flags: .barrier) {_publicTlsPort = newValue }}}
-//    public var publicUdpPort: Int {
-//        get { Api.objectQ.sync { _publicUdpPort } }
-//        set { Api.objectQ.sync(flags: .barrier) {_publicUdpPort = newValue }}}
-//    public var publicUpnpTlsPort: Int {
-//        get { Api.objectQ.sync { _publicUpnpTlsPort } }
-//        set { Api.objectQ.sync(flags: .barrier) {_publicUpnpTlsPort = newValue }}}
-//    public var publicUpnpUdpPort: Int {
-//        get { Api.objectQ.sync { _publicUpnpUdpPort } }
-//        set { Api.objectQ.sync(flags: .barrier) {_publicUpnpUdpPort = newValue }}}
-//    public var radioLicenseId: String {
-//        get { Api.objectQ.sync { _radioLicenseId } }
-//        set { Api.objectQ.sync(flags: .barrier) {_radioLicenseId = newValue }}}
-//    public var requiresAdditionalLicense: Bool {
-//        get { Api.objectQ.sync { _requiresAdditionalLicense } }
-//        set { Api.objectQ.sync(flags: .barrier) {_requiresAdditionalLicense = newValue }}}
-//    public var serialNumber: String {
-//        get { Api.objectQ.sync { _serialNumber } }
-//        set { Api.objectQ.sync(flags: .barrier) {_serialNumber = newValue }}}
-//    public var status: String {
-//        get { Api.objectQ.sync { _status } }
-//        set { Api.objectQ.sync(flags: .barrier) {_status = newValue }}}
-//    public var upnpSupported: Bool {
-//        get { Api.objectQ.sync { _upnpSupported } }
-//        set { Api.objectQ.sync(flags: .barrier) {_upnpSupported = newValue }}}
-//    public var wanConnected: Bool {
-//        get { Api.objectQ.sync { _wanConnected } }
-//        set { Api.objectQ.sync(flags: .barrier) {_wanConnected = newValue }}}
-//
-//    // FIXME: Not really part of the DiscoveryPacket
-//    public var isPortForwardOn: Bool {
-//        get { Api.objectQ.sync { _isPortForwardOn } }
-//        set { Api.objectQ.sync(flags: .barrier) {_isPortForwardOn = newValue }}}
-//    public var isWan: Bool {
-//        get { Api.objectQ.sync { _isWan } }
-//        set { Api.objectQ.sync(flags: .barrier) {_isWan = newValue }}}
-//    public var localInterfaceIP: String {
-//        get { Api.objectQ.sync { _localInterfaceIP } }
-//        set { Api.objectQ.sync(flags: .barrier) {_localInterfaceIP = newValue }}}
-////    public var lowBandwidthConnect: Bool {
-////        get { Api.objectQ.sync { _lowBandwidthConnect } }
-////        set { Api.objectQ.sync(flags: .barrier) {_lowBandwidthConnect = newValue }}}
-//    public var negotiatedHolePunchPort: Int {               // FIXME: never set anywhere
-//        get { Api.objectQ.sync { _negotiatedHolePunchPort } }
-//        set { Api.objectQ.sync(flags: .barrier) {_negotiatedHolePunchPort = newValue }}}
-//    public var requiresHolePunch: Bool {
-//        get { Api.objectQ.sync { _requiresHolePunch } }
-//        set { Api.objectQ.sync(flags: .barrier) {_requiresHolePunch = newValue }}}
-//    public var wanHandle: String {
-//        get { Api.objectQ.sync { _wanHandle } }
-//        set { Api.objectQ.sync(flags: .barrier) {_wanHandle = newValue }}}
-    
-//    public var description : String {
-//        return """
-//    Radio Serial:\t\t\(serialNumber)
-//    Licensed Version:\t\(maxLicensedVersion)
-//    Radio ID:\t\t\t\(radioLicenseId)
-//    Radio IP:\t\t\t\(publicIp)
-//    Radio Firmware:\t\t\(firmwareVersion)
-//
-//    Handles:\t\(guiClientHandles)
-//    Hosts:\t\(guiClientHosts)
-//    Ips:\t\t\(guiClientIps)
-//    Programs:\t\(guiClientPrograms)
-//    Stations:\t\(guiClientStations)
-//    """
-//    }
-    
-    public var connectionString : String { "\(isWan ? "wan" : "local").\(serialNumber)" }
-    
-    public static func ==(lhs: DiscoveryPacket, rhs: DiscoveryPacket) -> Bool {
-        // same serial number
-        return lhs.serialNumber == rhs.serialNumber && lhs.isWan == rhs.isWan
+        // notify for GuiClient addition(s)
+        for client in radio.guiClients {
+            NC.post(.guiClientHasBeenAdded, object: client as Any?)
+        }
     }
-    
-    // ----------------------------------------------------------------------------
-    // *** Backing properties (Do NOT use) ***
-    
-//    private var _lastSeen                   = Date()
-//
-//    private var _availableClients           = 0
-//    private var _availablePanadapters       = 0
-//    private var _availableSlices            = 0
-//    private var _callsign                   = ""
-//    private var _discoveryVersion           = ""
-//    private var _firmwareVersion            = ""
-//    private var _fpcMac                     = ""
-//    private var _guiClientHandles           = ""
-//    private var _guiClientHosts             = ""
-//    private var _guiClientIps               = ""
-//    private var _guiClientPrograms          = ""
-//    private var _guiClientStations          = ""
-//    private var _inUseHost                  = ""
-//    private var _inUseIp                    = ""
-//    private var _licensedClients            = 0
-//    private var _maxLicensedVersion         = ""
-//    private var _maxPanadapters             = 0
-//    private var _maxSlices                  = 0
-//    private var _model                      = ""
-//    private var _nickname                   = ""
-//    private var _port                       = -1
-//    private var _publicIp                   = ""
-//    private var _publicTlsPort              = -1
-//    private var _publicUdpPort              = -1
-//    private var _publicUpnpTlsPort          = -1
-//    private var _publicUpnpUdpPort          = -1
-//    private var _radioLicenseId             = ""
-//    private var _requiresAdditionalLicense  = false
-//    private var _serialNumber               = ""
-//    private var _status                     = ""
-//    private var _upnpSupported              = false
-//    private var _wanConnected               = false
-    
-    // FIXME: Not really part of the DiscoveryPacket
-//    private var _isPortForwardOn            = false
-//    private var _isWan                      = false
-//    private var _localInterfaceIP           = ""
-//    private var _lowBandwidthConnect        = false
-//    private var _negotiatedHolePunchPort    = -1
-//    private var _requiresHolePunch          = false
-//    private var _wanHandle                  = ""
-}
 
+    /// Update a known Radio
+    /// - Parameters:
+    ///   - radio:      the radio
+    ///   - packet:     a DiscoveryPacket
+    private func updateRadio(_ radio: Radio, from packet: DiscoveryPacket) {
+        let guiClients = parseGuiClients(packet)
+
+        additions(guiClients, radio)
+        removals(guiClients, radio)
+        updates(packet, radio)
+    }
+
+    /// Parse the GuiClient CSV fields in a packet
+    /// - Parameter packet:     a DiscoveryPacket
+    /// - Returns:              an array of GuiClient
+    private func parseGuiClients( _ packet: DiscoveryPacket) -> [GuiClient] {
+        var guiClients = [GuiClient]()
+
+        guard packet.guiClientPrograms != "" && packet.guiClientStations != "" && packet.guiClientHandles != "" else { return guiClients }
+
+        let programs  = packet.guiClientPrograms.components(separatedBy: ",")
+        let stations  = packet.guiClientStations.components(separatedBy: ",")
+        let handles   = packet.guiClientHandles.components(separatedBy: ",")
+        let hosts     = packet.guiClientHosts.components(separatedBy: ",")
+        let ips       = packet.guiClientIps.components(separatedBy: ",")
+
+        guard programs.count == handles.count && stations.count == handles.count && hosts.count == handles.count && ips.count == handles.count else { return guiClients }
+
+        for i in 0..<handles.count {
+            // valid handle, non-blank other fields?
+            if let handle = handles[i].handle, stations[i] != "", programs[i] != "" , hosts[i] != "", ips[i] != "" {
+
+                guiClients.append( GuiClient(handle: handle,
+                                             station: stations[i],
+                                             program: programs[i],
+                                             host: hosts[i],
+                                             ip: ips[i])
+                )
+            }
+        }
+        return guiClients
+    }
+
+    /// Add new GuiClients to a Radio
+    /// - Parameters:
+    ///   - guiClients:     a packet's array of GuiClient
+    ///   - radio:          the radio
+    private func additions(_ guiClients: [GuiClient], _ radio: Radio) {
+        // for each GuiClient in the new packet
+        for client in guiClients {
+            // is it known by the Radio?
+            if radio.guiClients.firstIndex(where: {$0.handle == client.handle} ) == nil {
+                // NO, add it
+                radio.guiClients.append(client)
+                NC.post(.guiClientHasBeenAdded, object: client as Any?)
+            }
+        }
+    }
+
+    /// Remove GuiClients from a Radio
+    /// - Parameters:
+    ///   - guiClients:     a packet's array of GuiClient
+    ///   - radio:          the radio
+    private func removals(_ guiClients: [GuiClient], _ radio: Radio) {
+        // for each GuiClient currently known by the Radio
+        for (i, client) in radio.guiClients.enumerated().reversed() {
+            // is it in the new packet?
+            if guiClients.firstIndex(where: {$0.handle == client.handle} ) == nil {
+                // NO, remove it
+                NC.post(.guiClientWillBeRemoved, object: client as Any?)
+                radio.guiClients.remove(at: i)
+                NC.post(.guiClientHasBeenRemoved, object: client as Any?)
+            }
+        }
+    }
+
+    /// Update Radio fields
+    /// - Parameters:
+    ///   - packet:      a DiscoveryPacket
+    ///   - radio:       the radio
+    private func updates(_ packet: DiscoveryPacket, _ radio: Radio) {
+
+        // TODO: add other fields as needed
+
+        radio.lastSeen = Date()
+
+        radio.guiClientStations = packet.guiClientStations
+        radio.guiClientPrograms = packet.guiClientPrograms
+        radio.guiClientHandles = packet.guiClientHandles
+        radio.guiClientHosts = packet.guiClientHosts
+        radio.guiClientIps = packet.guiClientIps
+        radio.isWan = packet.isWan
+        radio.serialNumber = packet.serialNumber
+        radio.status = packet.status
+    }
+}

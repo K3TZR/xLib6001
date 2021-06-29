@@ -76,7 +76,7 @@ public final class Radio: ObservableObject {
     @Published public private(set) var radioOptions = ""
     @Published public private(set) var region = ""
     @Published public private(set) var rfGainList = [RfGainValue]()
-    @Published public private(set) var serialNumber = ""
+//    @Published public private(set) var serialNumber = ""
     @Published public private(set) var serverConnected = false
     @Published public private(set) var setting = ""
     @Published public private(set) var sliceList = [SliceId]()
@@ -88,9 +88,33 @@ public final class Radio: ObservableObject {
     @Published public private(set) var staticNetmask = ""
     @Published public private(set) var tcxoPresent = false
 
-    @Published public var guiClients = [GuiClient]()
+//    @Published public var guiClients = [GuiClient]()
     @Published public var netmask = ""
     @Published public var packet: DiscoveryPacket!
+
+
+    // NEW RADIO PROPERTIES -----------------------------
+    @Published public var lastSeen = Date()
+
+    @Published public var guiClients = [GuiClient]()
+    @Published public var guiClientHandles = ""
+    @Published public var guiClientHosts = ""
+    @Published public var guiClientIps = ""
+    @Published public var guiClientPrograms = ""
+    @Published public var guiClientStations = ""
+    @Published public var isWan = false
+
+    @Published public var serialNumber = ""
+    @Published public var status = ""
+
+    public var connectionString : String { "\(isWan ? "wan" : "local").\(serialNumber)" }
+
+    public static func ==(lhs: Radio, rhs: Radio) -> Bool {
+        // same serial number
+        return lhs.serialNumber == rhs.serialNumber && lhs.isWan == rhs.isWan
+    }
+    // NEW RADIO PROPERTIES -----------------------------
+
 
     // Properties that send commands
     @Published public var apfEnabled: Bool = false {

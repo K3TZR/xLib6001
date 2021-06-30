@@ -84,32 +84,32 @@ final class TcpManager: NSObject {
     /// - Parameters:
     ///   - packet:                 a DiscoveryPacket
     /// - Returns:                  success / failure
-    func connect(_ packet: DiscoveryPacket) -> Bool {
+    func connect(_ radio: Radio) -> Bool {
         var portToUse = 0
         var localInterface: String?
         var success = true
 
         // identify the port
-        switch (packet.isWan, packet.requiresHolePunch) {
+        switch (radio.isWan, radio.requiresHolePunch) {
 
-        case (true, true):  portToUse = packet.negotiatedHolePunchPort   // isWan w/hole punch
-        case (true, false): portToUse = packet.publicTlsPort             // isWan
-        default:            portToUse = packet.port                      // local
+        case (true, true):  portToUse = radio.negotiatedHolePunchPort   // isWan w/hole punch
+        case (true, false): portToUse = radio.publicTlsPort             // isWan
+        default:            portToUse = radio.port                      // local
         }
         // attempt a connection
         do {
-            if packet.isWan && packet.requiresHolePunch {
+            if radio.isWan && radio.requiresHolePunch {
                 // insure that the localInterfaceIp has been specified
-                guard packet.localInterfaceIP != "0.0.0.0" else { return false }
+                guard radio.localInterfaceIP != "0.0.0.0" else { return false }
                 // create the localInterfaceIp value
-                localInterface = packet.localInterfaceIP + ":" + String(portToUse)
+                localInterface = radio.localInterfaceIP + ":" + String(portToUse)
 
                 // connect via the localInterface
-                try _tcpSocket.connect(toHost: packet.publicIp, onPort: UInt16(portToUse), viaInterface: localInterface, withTimeout: _timeout)
+                try _tcpSocket.connect(toHost: radio.publicIp, onPort: UInt16(portToUse), viaInterface: localInterface, withTimeout: _timeout)
 
             } else {
                 // connect on the default interface
-                try _tcpSocket.connect(toHost: packet.publicIp, onPort: UInt16(portToUse), withTimeout: _timeout)
+                try _tcpSocket.connect(toHost: radio.publicIp, onPort: UInt16(portToUse), withTimeout: _timeout)
             }
 
         } catch _ {
@@ -117,7 +117,7 @@ final class TcpManager: NSObject {
             success = false
         }
 //        if success { _isWan = packet.isWan ; _seqNum = 0 }
-        if success { _isWan = packet.isWan ; sequenceNumber = 0 }
+        if success { _isWan = radio.isWan ; sequenceNumber = 0 }
         return success
     }
     /// Disconnect TCP from the Radio (hardware)

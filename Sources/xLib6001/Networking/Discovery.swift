@@ -403,12 +403,20 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
 
         radio.lastSeen = Date()
 
+        radio.firmwareVersion = packet.firmwareVersion
         radio.guiClientStations = packet.guiClientStations
         radio.guiClientPrograms = packet.guiClientPrograms
         radio.guiClientHandles = packet.guiClientHandles
         radio.guiClientHosts = packet.guiClientHosts
         radio.guiClientIps = packet.guiClientIps
         radio.isWan = packet.isWan
+        radio.localInterfaceIP = packet.localInterfaceIP
+        radio.negotiatedHolePunchPort = packet.negotiatedHolePunchPort
+        radio.port = packet.port
+        radio.publicIp = packet.publicIp
+        radio.publicTlsPort = packet.publicTlsPort
+        radio.publicUdpPort = packet.publicUdpPort
+        radio.requiresHolePunch = packet.requiresHolePunch
         radio.serialNumber = packet.serialNumber
         radio.status = packet.status
     }

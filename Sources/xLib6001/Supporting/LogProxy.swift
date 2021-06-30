@@ -46,14 +46,14 @@ public final class LogProxy {
     ///   - file:       the file where the message originated
     ///   - line:       the line where the message originated
     public func logMessage(_ msg: String, _ level: MessageLevel, _ function: StaticString, _ file: StaticString, _ line: Int ) {
-        // pass the entry to the delegate (if any)
+        // is there a delegate?
         if delegate != nil {
+            // YES, pass it
             delegate!.logMessage(msg, level, function, file, line)
             
         } else {
-            let state = Api.sharedInstance.nsLogState
-            
-            switch state {
+            // NO, use NSLOG (as required by nsLogState)
+            switch Api.sharedInstance.nsLogState {
             case .normal:                   NSLog(Api.kName.prefix(4) + ": " + msg)
             case .limited (let exceptions): exceptions.forEach { if URL(fileURLWithPath: file.description).lastPathComponent == $0 { NSLog(Api.kName.prefix(4) + ": " + msg) }}
             case .none:                     break

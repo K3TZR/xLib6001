@@ -88,22 +88,22 @@ final class UdpManager: NSObject {
     /// - Parameters:
     ///   - selectedRadio:      a DiscoveredPacket
     ///   - clientHandle:       handle
-    func bind(_ packet: DiscoveryPacket, clientHandle: Handle? = nil) -> Bool {
-        var success               = false
+//    func bind(_ packet: DiscoveryPacket, clientHandle: Handle? = nil) -> Bool {
+    func bind(_ radio: Radio) -> Bool {        var success               = false
         var portToUse             : UInt16 = 0
         var tries                 = kMaxBindAttempts
 
         // identify the port
-        switch (packet.isWan, packet.requiresHolePunch) {
+        switch (radio.isWan, radio.requiresHolePunch) {
 
         case (true, true):        // isWan w/hole punch
-            portToUse = UInt16(packet.negotiatedHolePunchPort)
-            sendPort = UInt16(packet.negotiatedHolePunchPort)
+            portToUse = UInt16(radio.negotiatedHolePunchPort)
+            sendPort = UInt16(radio.negotiatedHolePunchPort)
             tries = 1  // isWan w/hole punch
 
         case (true, false):       // isWan
-            portToUse = UInt16(packet.publicUdpPort)
-            sendPort = UInt16(packet.publicUdpPort)
+            portToUse = UInt16(radio.publicUdpPort)
+            sendPort = UInt16(radio.publicUdpPort)
 
         default:                  // local
             portToUse = receivePort
@@ -130,7 +130,7 @@ final class UdpManager: NSObject {
         if success {
             // YES, save the actual port & ip in use
             receivePort = portToUse
-            sendIP = packet.publicIp
+            sendIP = radio.publicIp
             _udpBound = true
 
             // change the state

@@ -237,18 +237,18 @@ public final class Api {
         _params = params
         self.nsLogState = params.logState
 
+        let radio = Discovery.sharedInstance.radios[params.index]
+
         // make the Radio class the Api delegate
-        apiDelegate = Discovery.sharedInstance.radios[params.index]
+        apiDelegate = radio
 
-        // attempt to connect to the physical Radio
-        if let packet = Discovery.sharedInstance.radios[params.index].packet {
-            if tcp.connect(packet) {
-                checkVersion(packet)
+        // attempt to connect
+        if tcp.connect(radio) {
+            checkVersion(radio)
 
-                activeRadio = Discovery.sharedInstance.radios[params.index]
+            activeRadio = radio
 
-                return true
-            }
+            return true
         }
         // connection failed
         apiDelegate = nil
@@ -268,13 +268,13 @@ public final class Api {
             _log("Api TCP connected to: \(host), port \(port)", .debug, #function, #file, #line)
             NC.post(.tcpDidConnect, object: nil)
 
-            if activeRadio!.packet.isWan {
-                _log("Api Validate Wan handle: \(activeRadio!.packet.wanHandle)", .debug, #function, #file, #line)
-                send("wan validate handle=" + activeRadio!.packet.wanHandle, replyTo: wanValidateReplyHandler)
+            if activeRadio!.isWan {
+                _log("Api Validate Wan handle: \(activeRadio!.wanHandle)", .debug, #function, #file, #line)
+                send("wan validate handle=" + activeRadio!.wanHandle, replyTo: wanValidateReplyHandler)
 
             } else {
                 // bind a UDP port for the Streams
-                if udp.bind(activeRadio!.packet, clientHandle: connectionHandle) == false { tcp.disconnect() }
+                if udp.bind(activeRadio!) == false { tcp.disconnect() }
 
                 // FIXME: clientHandle is not used by bind????
             }
@@ -282,7 +282,7 @@ public final class Api {
         case .wanHandleValidated (let success):
             if success {
                 _log("Api Wan handle validated", .debug, #function, #file, #line)
-                if udp.bind(activeRadio!.packet, clientHandle: connectionHandle) == false { tcp.disconnect() }
+                if udp.bind(activeRadio!) == false { tcp.disconnect() }
             } else {
                 _log("Api Wan handle validation FAILED", .debug, #function, #file, #line)
                 tcp.disconnect()
@@ -292,7 +292,7 @@ public final class Api {
             _log("Api UDP bound: receive port \(receivePort), send port \(sendPort)", .debug, #function, #file, #line)
 
             // if a Wan connection, register
-            if activeRadio!.packet.isWan { udp.register(clientHandle: connectionHandle) }
+            if activeRadio!.isWan { udp.register(clientHandle: connectionHandle) }
 
             // a UDP port has been bound, inform observers
             NC.post(.udpDidBind, object: nil)
@@ -328,7 +328,7 @@ public final class Api {
     /// Disconnect the active Radio
     /// - Parameter reason:         a reason code
     public func disconnect(reason: String = "User Initiated") {
-        let name = activeRadio?.packet.nickname ?? "Unknown"
+        let name = activeRadio?.nickname ?? "Unknown"
         _log("Api disconnect initiated: fir radio = \(name)", .debug, #function, #file, #line)
 
         // stop all streams
@@ -380,13 +380,13 @@ public final class Api {
     
     /// executed after an IP Address has been obtained
     private func connectionCompletion(to radio: Radio) {
-        _log("Api connectionCompletion for: \(radio.packet.nickname)\(_params.pendingDisconnect != .none ? " (Pending Disconnection)" : "")", .debug, #function, #file, #line)
+        _log("Api connectionCompletion for: \(radio.nickname)\(_params.pendingDisconnect != .none ? " (Pending Disconnection)" : "")", .debug, #function, #file, #line)
 
         // send the initial commands if a normal connection
         if _params.pendingDisconnect == .none { sendCommands(to: radio) }
 
         // set the UDP port for a Local connection
-        if !radio.packet.isWan { send("client udpport " + "\(udp.sendPort)") }
+        if !radio.isWan { send("client udpport " + "\(udp.sendPort)") }
 
         // start pinging (if enabled)
         if _params.pendingDisconnect == .none { if pingerEnabled { _pinger = Pinger(tcpManager: tcp) }}
@@ -448,9 +448,9 @@ public final class Api {
     /// Determine if the Radio Firmware version is compatable with the API version
     /// - Parameters:
     ///   - selectedRadio:      a RadioParameters struct
-    private func checkVersion(_ packet: DiscoveryPacket) {
+    private func checkVersion(_ radio: Radio) {
         // get the Radio Version
-        let radioVersion = Version(packet.firmwareVersion)
+        let radioVersion = Version(radio.firmwareVersion)
         
         if kVersionSupported < radioVersion  {
             _log("Api Radio may need to be downgraded: Radio version = \(radioVersion.longString), API supports version = \(kVersionSupported.string)", .warning, #function, #file, #line)

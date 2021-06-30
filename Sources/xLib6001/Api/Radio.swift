@@ -90,12 +90,13 @@ public final class Radio: ObservableObject {
 
 //    @Published public var guiClients = [GuiClient]()
     @Published public var netmask = ""
-    @Published public var packet: DiscoveryPacket!
+//    @Published public var packet: DiscoveryPacket!
 
 
     // NEW RADIO PROPERTIES -----------------------------
     @Published public var lastSeen = Date()
 
+    @Published public var firmwareVersion = ""
     @Published public var guiClients = [GuiClient]()
     @Published public var guiClientHandles = ""
     @Published public var guiClientHosts = ""
@@ -103,9 +104,16 @@ public final class Radio: ObservableObject {
     @Published public var guiClientPrograms = ""
     @Published public var guiClientStations = ""
     @Published public var isWan = false
-
+    @Published public var localInterfaceIP = ""
+    @Published public var negotiatedHolePunchPort = -1
+    @Published public var port = -1
+    @Published public var publicIp = ""
+    @Published public var publicTlsPort = -1
+    @Published public var publicUdpPort = -1
+    @Published public var requiresHolePunch = false
     @Published public var serialNumber = ""
     @Published public var status = ""
+    @Published public var wanHandle = ""
 
     public var connectionString : String { "\(isWan ? "wan" : "local").\(serialNumber)" }
 
@@ -380,7 +388,7 @@ public final class Radio: ObservableObject {
     // MARK: - Initialization
     
     public init(_ packet: DiscoveryPacket) {
-        self.packet = packet
+//        self.packet = packet
         version = Version(packet.firmwareVersion)
         
         _api.apiDelegate = self
@@ -508,7 +516,7 @@ public final class Radio: ObservableObject {
         func guiClientWasEdited(_ handle: Handle, _ client: GuiClient) {
             // log & notify if all essential properties are present
             if client.handle != 0 && client.clientId != nil && client.program != "" && client.station != "" {
-                _log("Radio,     guiClient updated: \(client.handle.hex), \(client.station), \(packet.connectionString), \(client.program), \(client.clientId!)", .info, #function, #file, #line)
+                _log("Radio,     guiClient updated: \(client.handle.hex), \(client.station), \(connectionString), \(client.program), \(client.clientId!)", .info, #function, #file, #line)
                 NC.post(.guiClientHasBeenUpdated, object: client as Any?)
             }
         }
@@ -552,7 +560,7 @@ public final class Radio: ObservableObject {
                 guiClients.append(client)
 
                 // log and notify of GuiClient update
-                _log("Radio,     guiClient added:   \(handle.hex), \(station), \(program), \(clientId), \(packet.connectionString)", .info, #function, #file, #line)
+                _log("Radio,     guiClient added:   \(handle.hex), \(station), \(program), \(clientId), \(connectionString)", .info, #function, #file, #line)
                 NC.post(.guiClientHasBeenAdded, object: client as Any?)
 
                 guiClientWasEdited(handle, client)

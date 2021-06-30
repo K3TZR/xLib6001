@@ -98,11 +98,6 @@ public final class Radio: ObservableObject {
 
     @Published public var firmwareVersion = ""
     @Published public var guiClients = [GuiClient]()
-    @Published public var guiClientHandles = ""
-    @Published public var guiClientHosts = ""
-    @Published public var guiClientIps = ""
-    @Published public var guiClientPrograms = ""
-    @Published public var guiClientStations = ""
     @Published public var isWan = false
     @Published public var localInterfaceIP = ""
     @Published public var model = ""

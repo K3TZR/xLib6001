@@ -404,11 +404,6 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
         radio.lastSeen = Date()
 
         radio.firmwareVersion = packet.firmwareVersion
-        radio.guiClientStations = packet.guiClientStations
-        radio.guiClientPrograms = packet.guiClientPrograms
-        radio.guiClientHandles = packet.guiClientHandles
-        radio.guiClientHosts = packet.guiClientHosts
-        radio.guiClientIps = packet.guiClientIps
         radio.isWan = packet.isWan
         radio.localInterfaceIP = packet.localInterfaceIP
         radio.model = packet.model

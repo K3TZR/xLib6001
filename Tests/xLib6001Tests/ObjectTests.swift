@@ -17,7 +17,7 @@ final class ObjectTests: XCTestCase {
         sleep(2)
         if discovery.radios.count > 0 {
 
-            Swift.print("***** Radio found: \(discovery.radios[0].packet.nickname) (v\(discovery.radios[0].packet.firmwareVersion)) @ \(discovery.radios[0].packet.publicIp)")
+            Swift.print("***** Radio found: \(discovery.radios[0].nickname) (v\(discovery.radios[0].firmwareVersion)) @ \(discovery.radios[0].publicIp)")
 
             _ = Api.sharedInstance.connect( Api.ConnectionParams(index: 0, program: "ObjectTests", isGui: connectAsGui, logState: logState))
             sleep(2)

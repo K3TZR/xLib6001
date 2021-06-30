@@ -411,6 +411,7 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
         radio.guiClientIps = packet.guiClientIps
         radio.isWan = packet.isWan
         radio.localInterfaceIP = packet.localInterfaceIP
+        radio.model = packet.model
         radio.negotiatedHolePunchPort = packet.negotiatedHolePunchPort
         radio.port = packet.port
         radio.publicIp = packet.publicIp

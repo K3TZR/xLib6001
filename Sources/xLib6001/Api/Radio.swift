@@ -105,6 +105,7 @@ public final class Radio: ObservableObject {
     @Published public var guiClientStations = ""
     @Published public var isWan = false
     @Published public var localInterfaceIP = ""
+    @Published public var model = ""
     @Published public var negotiatedHolePunchPort = -1
     @Published public var port = -1
     @Published public var publicIp = ""

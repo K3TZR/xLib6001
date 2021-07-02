@@ -88,7 +88,6 @@ final class UdpManager: NSObject {
     /// - Parameters:
     ///   - selectedRadio:      a DiscoveredPacket
     ///   - clientHandle:       handle
-//    func bind(_ packet: DiscoveryPacket, clientHandle: Handle? = nil) -> Bool {
     func bind(_ radio: Radio) -> Bool {        var success               = false
         var portToUse             : UInt16 = 0
         var tries                 = kMaxBindAttempts
@@ -97,13 +96,13 @@ final class UdpManager: NSObject {
         switch (radio.isWan, radio.requiresHolePunch) {
 
         case (true, true):        // isWan w/hole punch
-            portToUse = UInt16(radio.negotiatedHolePunchPort)
-            sendPort = UInt16(radio.negotiatedHolePunchPort)
+            portToUse = UInt16(radio.negotiatedHolePunchPort!)
+            sendPort = UInt16(radio.negotiatedHolePunchPort!)
             tries = 1  // isWan w/hole punch
 
         case (true, false):       // isWan
-            portToUse = UInt16(radio.publicUdpPort)
-            sendPort = UInt16(radio.publicUdpPort)
+            portToUse = UInt16(radio.publicUdpPort!)
+            sendPort = UInt16(radio.publicUdpPort!)
 
         default:                  // local
             portToUse = receivePort

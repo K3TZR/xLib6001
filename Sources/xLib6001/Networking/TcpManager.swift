@@ -92,9 +92,9 @@ final class TcpManager: NSObject {
         // identify the port
         switch (radio.isWan, radio.requiresHolePunch) {
 
-        case (true, true):  portToUse = radio.negotiatedHolePunchPort   // isWan w/hole punch
-        case (true, false): portToUse = radio.publicTlsPort             // isWan
-        default:            portToUse = radio.port                      // local
+        case (true, true):  portToUse = radio.negotiatedHolePunchPort!   // isWan w/hole punch
+        case (true, false): portToUse = radio.publicTlsPort!             // isWan
+        default:            portToUse = radio.port!                      // local
         }
         // attempt a connection
         do {

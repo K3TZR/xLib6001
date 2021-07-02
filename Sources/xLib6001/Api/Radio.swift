@@ -101,11 +101,11 @@ public final class Radio: ObservableObject {
     @Published public var isWan = false
     @Published public var localInterfaceIP = ""
     @Published public var model = ""
-    @Published public var negotiatedHolePunchPort = -1
-    @Published public var port = -1
+    @Published public var negotiatedHolePunchPort: Int?
+    @Published public var port: Int?
     @Published public var publicIp = ""
-    @Published public var publicTlsPort = -1
-    @Published public var publicUdpPort = -1
+    @Published public var publicTlsPort: Int?
+    @Published public var publicUdpPort: Int?
     @Published public var requiresHolePunch = false
     @Published public var serialNumber = ""
     @Published public var status = ""

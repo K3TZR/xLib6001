@@ -29,7 +29,7 @@ public final class Discovery: NSObject, ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
     
-    @Published public var radios = [Radio]()
+    @Published public private(set) var radios = [Radio]()
 
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
@@ -63,7 +63,7 @@ public final class Discovery: NSObject, ObservableObject {
         _timer = DispatchSource.makeTimerSource(queue: _udpQ)
         _timer.schedule(deadline: DispatchTime.now(), repeating: .seconds(checkInterval))
         _timer.setEventHandler { [self] in
-            removeRadios(condition: {$0.isWan == false && abs($0.lastSeen.timeIntervalSinceNow) > Discovery.notSeenInterval} )
+            removeExpiredRadios()
         }
         // start the timer
         _timer.resume()
@@ -82,9 +82,17 @@ public final class Discovery: NSObject, ObservableObject {
         removeRadios(condition: {$0.isWan} )
     }
 
+    /// Convenience func for expired Radio removal
+    public func removeExpiredRadios() {
+        removeRadios(condition: {$0.isWan == false && abs($0.lastSeen.timeIntervalSinceNow) > Discovery.notSeenInterval} )
+    }
+
+    // ----------------------------------------------------------------------------
+    // MARK: - Private methods
+
     /// Remove radios
     /// - Parameter condition:  a closure defining the condition for removal
-    public func removeRadios(condition: (Radio) -> Bool) {
+    private func removeRadios(condition: (Radio) -> Bool) {
         var deleteList = [Int]()
 
         for (i, radio) in radios.enumerated() where condition(radio) {
@@ -142,9 +150,9 @@ extension Discovery: VitaSupport {
         case wanConnected               = "wan_connected"               // Local only
     }
 
-    /// Create a Data type containing a Vita Discovery stream
+    /// Create a Data type containing a Vita Discovery packet
     /// - Parameter payload:        the Discovery payload (as an array of String)
-    /// - Returns:                  a Data type containing a Vita Discovery stream
+    /// - Returns:                  a Data type containing a Vita Discovery packet
     public class func discovery(payload: [String]) -> Data? {
         // create a new Vita class (w/defaults & extDataWithStream / Discovery)
         let vita = Vita(type: .discovery, streamId: Vita.DiscoveryStreamId)
@@ -176,9 +184,6 @@ extension Discovery: VitaSupport {
         // return the encoded Vita class as Data
         return Vita.encodeAsData(vita)
     }
-
-    /// - Returns:        a RadioParameters struct (or nil)
-
 
     /// Parse a Vita class containing a Discovery broadcast
     /// - Parameter vita:   a Vita packet
@@ -406,6 +411,7 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
         radio.firmwareVersion = packet.firmwareVersion
         radio.isWan = packet.isWan
         radio.localInterfaceIP = packet.localInterfaceIP
+        radio.nickname = packet.nickname
         radio.model = packet.model
         radio.negotiatedHolePunchPort = packet.negotiatedHolePunchPort
         radio.port = packet.port

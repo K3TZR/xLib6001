@@ -15,13 +15,13 @@ public struct DiscoveryPacket : Equatable, Hashable {
     public init() {
         lastSeen = Date() // now
 
-        publicTlsPort = -1
-        publicUdpPort = -1
-        isPortForwardOn = false
-        publicTlsPort = -1
-        publicUdpPort = -1
-        publicUpnpTlsPort = -1
-        publicUpnpUdpPort = -1
+//        publicTlsPort = -1
+//        publicUdpPort = -1
+//        isPortForwardOn = false
+//        publicTlsPort = -1
+//        publicUdpPort = -1
+//        publicUpnpTlsPort = -1
+//        publicUpnpUdpPort = -1
     }
 
     public func hash(into hasher: inout Hasher) {
@@ -55,10 +55,10 @@ public struct DiscoveryPacket : Equatable, Hashable {
     public var nickname = ""
     public var port = 0
     public var publicIp = ""
-    public var publicTlsPort = 0
-    public var publicUdpPort = 0
-    public var publicUpnpTlsPort = 0
-    public var publicUpnpUdpPort = 0
+    public var publicTlsPort: Int?
+    public var publicUdpPort: Int?
+    public var publicUpnpTlsPort: Int?
+    public var publicUpnpUdpPort: Int?
     public var radioLicenseId = ""
     public var requiresAdditionalLicense = false
     public var serialNumber = ""

@@ -400,13 +400,13 @@ public final class WanServer: NSObject, ObservableObject {
             if var packet = Discovery.ParseDiscovery( message.keyValuesArray() ) {
                 // now continue to fill the radio parameters
                 // favor using the manually defined forwarded ports if they are defined
-                if (packet.publicTlsPort != -1 && packet.publicUdpPort != -1) {
-                    publicTlsPortToUse = packet.publicTlsPort
-                    publicUdpPortToUse = packet.publicUdpPort
+                if let tlsPort = packet.publicTlsPort, let udpPort = packet.publicUdpPort {
+                    publicTlsPortToUse = tlsPort
+                    publicUdpPortToUse = udpPort
                     packet.isPortForwardOn = true;
                 } else if (packet.upnpSupported) {
-                    publicTlsPortToUse = packet.publicUpnpTlsPort
-                    publicUdpPortToUse = packet.publicUpnpUdpPort
+                    publicTlsPortToUse = packet.publicUpnpTlsPort!
+                    publicUdpPortToUse = packet.publicUpnpUdpPort!
                     packet.isPortForwardOn = false
                 }
 

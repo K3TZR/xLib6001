@@ -189,14 +189,14 @@ public final class WanServer: NSObject, ObservableObject {
     /// - Parameters:
     ///   - serialNumber:       the serial number of the Radio
     ///   - holePunchPort:      the negotiated Hole Punch port number
-    public func connectTo(_ serialNumber: String, holePunchPort: Int) {
+    public func connectTo(_ serialNumber: String, holePunchPort: Int?) {
         // insure that the WanServer is connected to SmartLink
         guard isConnected else {
             _log("WanServer, NOT connected, unable to send Connect Message", .warning, #function, #file, #line)
             return
         }
         // send a command to SmartLink to request a connection to the specified Radio
-        sendTlsCommand("application connect serial=\(serialNumber) hole_punch_port=\(holePunchPort))", timeout: _timeout, tag: kAppConnectTag)
+        sendTlsCommand("application connect serial=\(serialNumber) hole_punch_port=\(holePunchPort ?? 0))", timeout: _timeout, tag: kAppConnectTag)
     }
     
     /// Disconnect a Smartlink connection to a Radio
@@ -414,7 +414,7 @@ public final class WanServer: NSObject, ObservableObject {
                     /* This will require extra negotiation that chooses
                      * a port for both sides to try
                      */
-                    //TODO: We also need to check the NAT for preserve_ports coming from radio here
+                    // TODO: We also need to check the NAT for preserve_ports coming from radio here
                     // if the NAT DOES NOT preserve ports then we can't do hole punch
                     packet.requiresHolePunch = true
                 }

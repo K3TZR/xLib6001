@@ -36,6 +36,7 @@ public typealias ObjectId           = UInt16
 public typealias PanadapterStreamId = StreamId
 public typealias ProfileId          = String
 public typealias ProfileName        = String
+public typealias RadioId            = String
 public typealias RemoteRxStreamId   = StreamId
 public typealias RemoteTxStreamId   = StreamId
 public typealias ReplyHandler       = (_ command: String, _ seqNumber: SequenceNumber, _ responseValue: String, _ reply: String) -> Void

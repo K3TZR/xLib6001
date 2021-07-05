@@ -31,6 +31,17 @@ public final class Discovery: NSObject, ObservableObject {
     
     @Published public private(set) var radios = [Radio]()
 
+    public enum RadioTypes : String {
+        case flex6300   = "flex-6300"
+        case flex6400   = "flex-6400"
+        case flex6400m  = "flex-6400m"
+        case flex6500   = "flex-6500"
+        case flex6600   = "flex-6600"
+        case flex6600m  = "flex-6600m"
+        case flex6700   = "flex-6700"
+        case unknown    = "Unknown"
+    }
+
     // ----------------------------------------------------------------------------
     // MARK: - Private properties
     
@@ -306,7 +317,7 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
     /// Add a new Radio
     /// - Parameter packet:     a DiscoveryPacket
     private func addRadio(from packet: DiscoveryPacket) {
-        let radio = Radio(packet)
+        let radio = Radio(packet.connectionString)
 
         // update needed fields
         radio.guiClients = parseGuiClients(packet)
@@ -408,7 +419,7 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
 
         radio.lastSeen = Date()
 
-        radio.firmwareVersion = packet.firmwareVersion
+        radio.version = Version(packet.firmwareVersion)
         radio.isWan = packet.isWan
         radio.localInterfaceIP = packet.localInterfaceIP
         radio.nickname = packet.nickname
@@ -421,5 +432,9 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
         radio.requiresHolePunch = packet.requiresHolePunch
         radio.serialNumber = packet.serialNumber
         radio.status = packet.status
+        
+        radio.radioType = RadioTypes(rawValue: radio.model.lowercased()) ?? .unknown
+        
+
     }
 }

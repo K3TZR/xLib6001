@@ -12,10 +12,12 @@ import Foundation
 ///      The Radio class is the object analog to the Radio hardware
 ///      It manages the use of all of the other model objects when
 ///      connected to the Radio hardware by the Api class
-public final class Radio: ObservableObject {
+public final class Radio: Identifiable, ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Published properties
-    
+
+    @Published public internal(set) var id: RadioId
+
     // Dynamic Model Collections
     @Published public var amplifiers = [AmplifierId: Amplifier]()
     @Published public var bandSettings = [BandId: BandSetting]()
@@ -109,6 +111,7 @@ public final class Radio: ObservableObject {
     @Published public var requiresHolePunch = false
     @Published public var serialNumber = ""
     @Published public var status = ""
+    @Published public var version = Version()
     @Published public var wanHandle = ""
 
     public var connectionString : String { "\(isWan ? "wan" : "local").\(serialNumber)" }
@@ -197,13 +200,12 @@ public final class Radio: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Public properties
 
-    public private(set) var radioType: RadioTypes? = .flex6700
+    public var radioType: Discovery.RadioTypes? = .flex6700
     public var replyHandlers : [SequenceNumber: ReplyTuple] {
         get { Api.objectQ.sync { _replyHandlers } }
         set { Api.objectQ.sync(flags: .barrier) { _replyHandlers = newValue }}}
     public private(set) var sliceErrors = [String]()  // milliHz
     public private(set) var uptime = 0
-    public let version: Version
 
     // ----------------------------------------------------------------------------
     // MARK: - Public types
@@ -215,15 +217,6 @@ public final class Radio: ObservableObject {
         var mode: String
         var txFilterHigh: Int
         var txFilterLow: Int
-    }
-    public enum RadioTypes : String {
-        case flex6300   = "flex-6300"
-        case flex6400   = "flex-6400"
-        case flex6400m  = "flex-6400m"
-        case flex6500   = "flex-6500"
-        case flex6600   = "flex-6600"
-        case flex6600m  = "flex-6600m"
-        case flex6700   = "flex-6700"
     }
     public struct TxFilter {
         var high = 0
@@ -383,14 +376,8 @@ public final class Radio: ObservableObject {
     // ----------------------------------------------------------------------------
     // MARK: - Initialization
     
-    public init(_ packet: DiscoveryPacket) {
-//        self.packet = packet
-        version = Version(packet.firmwareVersion)
-        
-        _api.apiDelegate = self
-        radioType = RadioTypes(rawValue: packet.model.lowercased())
-        if radioType == nil { _log("Radio, unknown model: \(packet.model)", .warning, #function, #file, #line) }
-        
+    public init(_ id: RadioId) {
+        self.id = id
         // initialize the static models (only one of each is ever created)
         atu = Atu()
         cwx = Cwx()
@@ -399,12 +386,12 @@ public final class Radio: ObservableObject {
         netCwStream = NetCwStream()
         transmit = Transmit()
         waveform = Waveform()
-        
+
         // initialize Equalizers
         equalizers[.rxsc] = Equalizer(Equalizer.EqType.rxsc.rawValue)
         equalizers[.txsc] = Equalizer(Equalizer.EqType.txsc.rawValue)
     }
-    
+
     // ----------------------------------------------------------------------------
     // MARK: - Public methods
     

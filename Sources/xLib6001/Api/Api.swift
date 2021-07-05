@@ -241,7 +241,7 @@ public final class Api {
 
         // make the Radio class the Api delegate
         apiDelegate = radio
-
+        
         // attempt to connect
         if tcp.connect(radio) {
             checkVersion(radio)

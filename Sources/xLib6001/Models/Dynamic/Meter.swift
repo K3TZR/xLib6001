@@ -136,8 +136,8 @@ extension Meter: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
-        DispatchQueue.main.async { 
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+//        DispatchQueue.main.async {
             // is the object in use?
             if inUse {
                 // YES, extract the Meter Number from the first KeyValues entry
@@ -178,7 +178,7 @@ extension Meter: DynamicModel {
                     }
                 }
             }
-        }
+//        }
     }
 
     /// Parse Meter key/value pairs
@@ -186,7 +186,7 @@ extension Meter: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
         
         // process each key/value pair, <n.key=value>

@@ -41,7 +41,7 @@ final class ObjectTests: XCTestCase {
 
     ///   Format:  <Id, > <"ant", ant> <"ip", ip> <"model", model> <"port", port> <"serial_num", serialNumber>
     private var amplifierStatus = "0x12345678 ant=ANT1 ip=10.0.1.106 model=PGXL port=4123 serial_num=1234-5678-9012 state=STANDBY"
-    func testAmplifierParse() {
+    @MainActor func testAmplifierParse() {
         let type = "Amplifier"
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
@@ -109,20 +109,20 @@ final class ObjectTests: XCTestCase {
     private var equalizerRxStatus = "rxsc mode=0 63Hz=0 125Hz=10 250Hz=20 500Hz=30 1000Hz=-10 2000Hz=-20 4000Hz=-30 8000Hz=-40"
     private var equalizerTxStatus = "txsc mode=0 63Hz=0 125Hz=10 250Hz=20 500Hz=30 1000Hz=-10 2000Hz=-20 4000Hz=-30 8000Hz=-40"
 
-    func testEqualizerRxParse() {
+    @MainActor func testEqualizerRxParse() {
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
 
         equalizerParse(.rxsc)
     }
-    func testEqualizerTxParse() {
+    @MainActor func testEqualizerTxParse() {
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
 
         equalizerParse(.txsc)
     }
 
-    func equalizerParse(_ eqType: Equalizer.EqType) {
+    @MainActor func equalizerParse(_ eqType: Equalizer.EqType) {
         let type = "Equalizer"
 
         let radio = discoverRadio(logState: .limited(to: [type + ".swift"]))
@@ -244,7 +244,7 @@ final class ObjectTests: XCTestCase {
 
     private let memoryStatus = "1 owner=K3TZR group= freq=14.100000 name= mode=USB step=100 repeater=SIMPLEX repeater_offset=0.000000 tone_mode=OFF tone_value=67.0 power=100 rx_filter_low=100 rx_filter_high=2900 highlight=0 highlight_color=0x00000000 squelch=1 squelch_level=20 rtty_mark=2 rtty_shift=170 digl_offset=2210 digu_offset=1500"
 
-    func testMemoryParse() {
+    @MainActor func testMemoryParse() {
         let type = "Memory"
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
@@ -524,7 +524,7 @@ final class ObjectTests: XCTestCase {
 
     private let meterStatus = "1.src=COD-#1.num=1#1.nam=MICPEAK#1.low=-150.0#1.hi=20.0#1.desc=Signal strength of MIC output in CODEC#1.unit=dBFS#1.fps=40#"
 
-    func testMeterParse() {
+    @MainActor func testMeterParse() {
         let type = "Meter"
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
@@ -649,7 +649,7 @@ final class ObjectTests: XCTestCase {
 
     private let panadapterStatus = "pan 0x40000001 wnb=0 wnb_level=92 wnb_updating=0 band_zoom=0 segment_zoom=0 x_pixels=50 y_pixels=100 center=14.100000 bandwidth=0.200000 min_dbm=-125.00 max_dbm=-40.00 fps=25 average=23 weighted_average=0 rfgain=50 rxant=ANT1 wide=0 loopa=0 loopb=1 band=20 daxiq=0 daxiq_rate=0 capacity=16 available=16 waterfall=42000000 min_bw=0.004920 max_bw=14.745601 xvtr= pre= ant_list=ANT1,ANT2,RX_A,XVTR"
 
-    func testPanadapterParse() {
+    @MainActor func testPanadapterParse() {
         let type = "Panadapter"
         let id = panadapterStatus.components(separatedBy: " ")[1].streamId!
 
@@ -905,7 +905,7 @@ final class ObjectTests: XCTestCase {
     // MARK: - Slice
 
     private var sliceStatus = "1 mode=USB filter_lo=100 filter_hi=2800 agc_mode=med agc_threshold=65 agc_off_level=10 qsk=1 step=100 step_list=1,10,50,100,500,1000,2000,3000 anf=1 anf_level=33 nr=0 nr_level=25 nb=1 nb_level=50 wnb=0 wnb_level=42 apf=1 apf_level=76 squelch=1 squelch_level=22 in_use=1 rf_frequency=15.000"
-    func testSliceParse() {
+    @MainActor func testSliceParse() {
         let type = "Slice"
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
@@ -1527,7 +1527,7 @@ final class ObjectTests: XCTestCase {
     // MARK: - Transmit
 
     private var transmitProperties_1 = "tx_rf_power_changes_allowed=1 tune=0 show_tx_in_waterfall=0 mon_available=1 max_power_level=100"
-    func testTransmit_1() {
+    @MainActor func testTransmit_1() {
         let type = "Transmit"
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
@@ -1572,7 +1572,7 @@ final class ObjectTests: XCTestCase {
     }
 
     private let transmitProperties_2 = "am_carrier_level=35 compander=1 compander_level=50 break_in_delay=10 break_in=0"
-    func testTransmit_2() {
+    @MainActor func testTransmit_2() {
         let type = "Transmit"
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
@@ -1618,7 +1618,7 @@ final class ObjectTests: XCTestCase {
 
     private let transmitProperties_3 = "freq=14.100000 rfpower=100 tunepower=10 tx_slice_mode=USB hwalc_enabled=0 inhibit=0 dax=0 sb_monitor=0 mon_gain_sb=75 mon_pan_sb=50 met_in_rx=0 am_carrier_level=100 mic_selection=MIC mic_level=40 mic_boost=1 mic_bias=0 mic_acc=0 compander=1 compander_level=70 vox_enable=0 vox_level=50 vox_delay=72 speech_processor_enable=1 speech_processor_level=0 lo=100 hi=2900 tx_filter_changes_allowed=1 tx_antenna=ANT1 pitch=600 speed=30 iambic=1 iambic_mode=1 swap_paddles=0 break_in=1 break_in_delay=41 cwl_enabled=0 sidetone=1 mon_gain_cw=80 mon_pan_cw=50 synccwx=1"
 
-    func testTransmit_3() {
+    @MainActor func testTransmit_3() {
         let type = "Transmit"
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
@@ -1777,7 +1777,7 @@ final class ObjectTests: XCTestCase {
         if radio.slices.count != 0 { XCTFail("----->>>>> Slice(s) NOT removed *****", file: #function) }
     }
 
-    func testWaterfallParse() {
+    @MainActor func testWaterfallParse() {
         let type = "Waterfall"
         var existingObjects = false
 
@@ -1953,14 +1953,14 @@ final class ObjectTests: XCTestCase {
     private var xvtrStatus = "0 name=220 rf_freq=220 if_freq=28 lo_error=0 max_power=10 rx_gain=0 order=0 rx_only=1 is_valid=1 preferred=1 two_meter_int=0"
     private var xvtrStatusLongName = "0 name=12345678 rf_freq=220 if_freq=28 lo_error=0 max_power=10 rx_gain=0 order=0 rx_only=1 is_valid=1 preferred=1 two_meter_int=0"
 
-    func testXvtrParse() {
+    @MainActor func testXvtrParse() {
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
 
         xvtrCheck(status: xvtrStatus, expectedName: "220")
     }
 
-    func testXvtrName() {
+    @MainActor func testXvtrName() {
 
         Swift.print("\n-------------------- \(#function) --------------------\n")
 
@@ -1968,7 +1968,7 @@ final class ObjectTests: XCTestCase {
         xvtrCheck(status: xvtrStatusLongName, expectedName: "1234")
     }
 
-    func xvtrCheck(status: String, expectedName: String) {
+    @MainActor func xvtrCheck(status: String, expectedName: String) {
         let type = "Xvtr"
         var existingObjects = false
 

@@ -213,8 +213,8 @@ extension Memory: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
-        DispatchQueue.main.async { 
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+//        DispatchQueue.main.async {
             // get the Id
             if let id = properties[0].key.objectId {
                 // is the object in use?
@@ -240,7 +240,7 @@ extension Memory: DynamicModel {
                     }
                 }
             }
-        }
+//        }
     }
     
     /// Parse Memory key/value pairs
@@ -248,7 +248,7 @@ extension Memory: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray)  {
+    @MainActor func parseProperties(_ properties: KeyValuesArray)  {
         _suppress = true
         
         // process each key/value pair, <key=value>

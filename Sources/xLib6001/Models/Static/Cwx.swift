@@ -247,7 +247,7 @@ extension Cwx: StaticModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray)  {
+    @MainActor func parseProperties(_ properties: KeyValuesArray)  {
         // process each key/value pair, <key=value>
         for property in properties {
             // is it a Macro?

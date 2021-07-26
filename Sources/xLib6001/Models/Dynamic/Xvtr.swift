@@ -109,13 +109,13 @@ extension Xvtr: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true ) {
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true ) {
         // Format:  <id, > <name, > <"rf_freq", value> <"if_freq", value> <"lo_error", value> <"max_power", value>
         //              <"rx_gain",value> <"order", value> <"rx_only", 1|0> <"is_valid", 1|0> <"preferred", 1|0>
         //              <"two_meter_int", value>
         //      OR
         // Format: <id, > <"in_use", 0>
-        DispatchQueue.main.async {
+//        DispatchQueue.main.async {
             // get the id
             if let id = properties[0].key.objectId {
                 // isthe Xvtr in use?
@@ -141,7 +141,7 @@ extension Xvtr: DynamicModel {
                     }
                 }
             }
-        }
+//        }
     }
     
     /// Parse Xvtr key/value pairs
@@ -149,7 +149,7 @@ extension Xvtr: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
         
         // process each key/value pair, <key=value>

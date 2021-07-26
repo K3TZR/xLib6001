@@ -30,7 +30,7 @@ public protocol LogHandler: AnyObject {
 protocol StaticModel: AnyObject {
     /// Parse <key=value> arrays to set object properties
     /// - Parameter keyValues:  a KeyValues array containing object property values
-    func parseProperties(_ keyValues: KeyValuesArray)
+    @MainActor func parseProperties(_ keyValues: KeyValuesArray)
 }
 
 /// Models for which there can be multiple instances
@@ -42,7 +42,7 @@ protocol DynamicModel: StaticModel {
     ///   - keyValues:  a KeyValues array containing a Status message for an object type
     ///   - radio:      the current Radio object
     ///   - inUse:      a flag indicating whether the object in the status message is active
-    static func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool)
+    @MainActor static func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool)
     
     associatedtype IdType
     var id: IdType {get set}

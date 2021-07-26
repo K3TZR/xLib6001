@@ -177,7 +177,7 @@ public final class Radio: Identifiable, ObservableObject {
     @Published public var muteLocalAudio = false {
         didSet { if !_suppress && muteLocalAudio != oldValue { radioSetCmd( "mute_local_audio", muteLocalAudio.as1or0) }}}
     @Published public var nickname = "" {
-        didSet { if !_suppress && nickname != oldValue { radioCmd("name", nickname) }}}
+        didSet { if  !_suppress && nickname != oldValue { radioCmd("name", nickname) }}}
     @Published public var oscillator = "" {
         didSet { if !_suppress && oscillator != oldValue {  _log("Oscillator, not implemented", .warning, #function, #file, #line) }}}       // FIXME:
     @Published public var program = "" {
@@ -486,7 +486,7 @@ public final class Radio: Identifiable, ObservableObject {
             if currentMox == true { mox = false  }
         }
     }
-    
+
     // ----------------------------------------------------------------------------
     // MARK: - Private methods
     
@@ -642,7 +642,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///
     /// - Parameters:
     ///   - commandSuffix:      a Command Suffix
-    private func parseStatus(_ commandSuffix: String) {
+    @MainActor private func parseStatus(_ commandSuffix: String) {
         // separate it into its components ( [0] = <apiHandle>, [1] = <remainder> )
         let components = commandSuffix.components(separatedBy: "|")
         
@@ -728,7 +728,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///   - radio:          the current Radio class
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
-    private func parseDisplay(_ radio: Radio, _ keyValues: KeyValuesArray, _ inUse: Bool = true) {
+    @MainActor private func parseDisplay(_ radio: Radio, _ keyValues: KeyValuesArray, _ inUse: Bool = true) {
         switch keyValues[0].key {
         
         case DisplayTokens.panadapter.rawValue:  Panadapter.parseStatus(radio, keyValues, inUse)
@@ -745,7 +745,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///   - keyValues:      a KeyValuesArray
     ///   - radio:          the current Radio class
     ///   - remainder:      the text of the status mesage
-    private func parseStream(_ radio: Radio, _ remainder: String) {
+    @MainActor private func parseStream(_ radio: Radio, _ remainder: String) {
         let properties = remainder.keyValuesArray()
         
         // is the 1st KeyValue a StreamId?
@@ -789,7 +789,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///   - radio:          the current Radio class
     ///   - properties:     a KeyValuesArray
     ///   - inUse:          false = "to be deleted"
-    private func parseInterlock(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    @MainActor private func parseInterlock(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // is it a Band Setting?
         if properties[0].key == "band" {
             // YES, drop the "band", pass it to BandSetting
@@ -808,7 +808,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///   - radio:          the current Radio class
     ///   - properties:     a KeyValuesArray
     ///   - inUse:          false = "to be deleted"
-    private func parseTransmit(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    @MainActor private func parseTransmit(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // is it a Band Setting?
         if properties[0].key == "band" {
             // YES, drop the "band", pass it to BandSetting
@@ -1141,7 +1141,7 @@ extension Radio: ApiDelegate {
         case "H", "h":  _api.connectionHandle = suffix.handle
         case "M", "m":  parseMessage(suffix)
         case "R", "r":  parseReply(suffix)
-        case "S", "s":  parseStatus(suffix)
+        case "S", "s":  DispatchQueue.main.async { self.parseStatus(suffix) }
         case "V", "v":  _hardwareVersion = suffix
         default:        _log("Radio, unexpected message: \(msg)", .warning, #function, #file, #line) }
     }
@@ -1243,4 +1243,3 @@ extension Radio: ApiDelegate {
         }
     }
 }
-

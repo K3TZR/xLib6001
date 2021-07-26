@@ -137,9 +137,9 @@ extension Interlock: StaticModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         
-        DispatchQueue.main.async { [self] in
+//        DispatchQueue.main.async { [self] in
             _suppress = true
             
             // NO, process each key/value pair, <key=value>
@@ -179,5 +179,5 @@ extension Interlock: StaticModel {
             }
             _suppress = false
         }
-    }
+//    }
 }

@@ -68,7 +68,9 @@ public final class Tnf: ObservableObject, Identifiable {
     // ----------------------------------------------------------------------------
     // MARK: - Initialization
     
-    public init(_ id: TnfId) { self.id = id }
+    public init(_ id: TnfId) {
+        self.id = id
+    }
     
     // ----------------------------------------------------------------------------
     // MARK: - Public Command methods
@@ -76,7 +78,6 @@ public final class Tnf: ObservableObject, Identifiable {
     /// Remove a Tnf
     /// - Parameters:
     ///   - callback:           ReplyHandler (optional)
-    ///
     public func remove(callback: ReplyHandler? = nil) {
         _api.send("tnf remove " + " \(id)", replyTo: callback)
         
@@ -97,7 +98,6 @@ public final class Tnf: ObservableObject, Identifiable {
     /// - Parameters:
     ///   - token:      the parse token
     ///   - value:      the new value
-    ///
     private func tnfCmd(_ token: TnfTokens, _ value: Any) {
         _api.send("tnf set " + "\(id) " + token.rawValue + "=\(value)")
     }
@@ -108,8 +108,6 @@ public final class Tnf: ObservableObject, Identifiable {
 
 extension Tnf: DynamicModel {
     /// Parse a Tnf status message
-    ///   format: <tnfId> <key=value> <key=value> ...<key=value>
-    ///
     ///   StatusParser Protocol method, executes on the parseQ
     ///
     /// - Parameters:
@@ -117,9 +115,8 @@ extension Tnf: DynamicModel {
     ///   - radio:          the current Radio class
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
-    ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
-        DispatchQueue.main.async {
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+//        DispatchQueue.main.async {
             // get the Id
             if let id = properties[0].key.objectId {
                 // is the object in use?
@@ -149,15 +146,14 @@ extension Tnf: DynamicModel {
                     }
                 }
             }
-        }
+//        }
     }
     
     /// Parse Tnf key/value pairs
     ///   PropertiesParser Protocol method, executes on the parseQ
     ///
     /// - Parameter properties:       a KeyValuesArray
-    ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
         
         // process each key/value pair, <key=value>

@@ -218,9 +218,9 @@ extension Transmit: StaticModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
 
-        DispatchQueue.main.async { [self] in
+//        DispatchQueue.main.async { [self] in
             _suppress = true
 
             // process each key/value pair, <key=value>
@@ -292,5 +292,5 @@ extension Transmit: StaticModel {
             }
             _suppress = false
         }
-    }
+//    }
 }

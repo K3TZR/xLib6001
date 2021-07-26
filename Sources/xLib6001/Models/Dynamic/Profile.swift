@@ -100,8 +100,8 @@ extension Profile: DynamicModel {
     ///   - queue:              a parse Queue for the object
     ///   - inUse:              false = "to be deleted"
     ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
-        DispatchQueue.main.async {            
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+//        DispatchQueue.main.async {
             let components = properties[0].key.split(separator: " ")
 
             // get the Id
@@ -124,7 +124,7 @@ extension Profile: DynamicModel {
             }
             // pass the remaining values to Profile for parsing
             radio.profiles[id]!.parseProperties( adjustedProperties )
-        }
+//        }
     }
 
     /// Parse a Profile status message
@@ -132,7 +132,7 @@ extension Profile: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         //              <-properties[0]->     <--- properties[1] (if any) --->
         //     format:  <global list, "">     <value, "">^<value, "">^...<value, "">^
         //     format:  <global current, "">  <value, "">

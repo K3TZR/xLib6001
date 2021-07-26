@@ -128,10 +128,10 @@ extension RemoteTxAudioStream: DynamicModel {
     ///   - queue:              a parse Queue for the object
     ///   - inUse:              false = "to be deleted"
     ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // Format:  <streamId, > <"type", "remote_audio_tx"> <"compression", "1"|"0"> <"client_handle", handle> <"ip", value>
         
-        DispatchQueue.main.async {
+//        DispatchQueue.main.async {
             // get the Id
             if let id =  properties[0].key.streamId {
                 // is the object in use?
@@ -158,14 +158,14 @@ extension RemoteTxAudioStream: DynamicModel {
                     }
                 }
             }
-        }
+//        }
     }
     
     ///  Parse RemoteTxAudioStream key/value pairs
     ///   PropertiesParser Protocol method, executes on the parseQ
     ///
     /// - Parameter properties: a KeyValuesArray
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
         
         // process each key/value pair

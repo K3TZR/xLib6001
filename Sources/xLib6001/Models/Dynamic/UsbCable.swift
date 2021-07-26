@@ -149,7 +149,7 @@ extension UsbCable: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // TYPE: CAT
         //      <id, > <type, > <enable, > <pluggedIn, > <name, > <source, > <sourceTxAnt, > <sourceRxAnt, > <sourceSLice, >
         //      <autoReport, > <preamp, > <polarity, > <log, > <speed, > <dataBits, > <stopBits, > <parity, > <flowControl, >
@@ -157,7 +157,7 @@ extension UsbCable: DynamicModel {
         
         // FIXME: Need other formats
         
-        DispatchQueue.main.async {
+//        DispatchQueue.main.async {
             // get the Id
             let id = properties[0].key
             
@@ -191,7 +191,7 @@ extension UsbCable: DynamicModel {
                     NC.post(.usbCableHasBeenRemoved, object: id as Any?)
                 }
             }
-        }
+//        }
     }
     
     /// Parse USB Cable key/value pairs
@@ -199,7 +199,7 @@ extension UsbCable: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         // TYPE: CAT
         //      <type, > <enable, > <pluggedIn, > <name, > <source, > <sourceTxAnt, > <sourceRxAnt, > <sourceSLice, > <autoReport, >
         //      <preamp, > <polarity, > <log, > <speed, > <dataBits, > <stopBits, > <parity, > <flowControl, >

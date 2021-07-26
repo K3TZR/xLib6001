@@ -147,12 +147,12 @@ extension Amplifier: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         ///   Format:  <Id, > <"ant", ant> <"ip", ip> <"model", model> <"port", port> <"serial_num", serialNumber>
         
         // TODO: verify
         
-        DispatchQueue.main.async { 
+//        DispatchQueue.main.async {
             // get the handle
             if let id = properties[0].key.handle {
                 // is the object in use
@@ -177,7 +177,7 @@ extension Amplifier: DynamicModel {
                     }
                 }
             }
-        }
+//        }
     }
     
     /// Parse Amplifier key/value pairs
@@ -185,7 +185,7 @@ extension Amplifier: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
         
         // process each key/value pair, <key=value>

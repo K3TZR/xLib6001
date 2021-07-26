@@ -95,8 +95,8 @@ extension Atu: StaticModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
-        DispatchQueue.main.async { [self] in
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
+//        DispatchQueue.main.async { [self] in
             _suppress = true
 
             // process each key/value pair, <key=value>
@@ -118,5 +118,5 @@ extension Atu: StaticModel {
             }
             _suppress = false
         }
-    }
+//    }
 }

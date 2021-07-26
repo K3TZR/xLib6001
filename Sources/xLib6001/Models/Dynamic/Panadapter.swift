@@ -290,7 +290,7 @@ extension Panadapter: DynamicModelWithStream {
     ///   - radio:          the current Radio class
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // Format: <"pan", ""> <streamId, ""> <"wnb", 1|0> <"wnb_level", value> <"wnb_updating", 1|0> <"x_pixels", value> <"y_pixels", value>
         //          <"center", value>, <"bandwidth", value> <"min_dbm", value> <"max_dbm", value> <"fps", value> <"average", value>
         //          <"weighted_average", 1|0> <"rfgain", value> <"rxant", value> <"wide", 1|0> <"loopa", 1|0> <"loopb", 1|0>
@@ -307,7 +307,7 @@ extension Panadapter: DynamicModelWithStream {
         //      OR
         // Format: <"pan", ""> <streamId, ""> <"daxiq", value> <"daxiq_rate", value> <"capacity", value> <"available", value>
 
-        DispatchQueue.main.async { [self] in
+//        DispatchQueue.main.async { [self] in
             //get the Id
             if let id =  properties[1].key.streamId {
                 // is the object in use?
@@ -328,13 +328,13 @@ extension Panadapter: DynamicModelWithStream {
                     }
                 }
             }
-        }
+//        }
     }
 
     /// Parse Panadapter key/value pairs
     ///   executes on the mainQ
     /// - Parameter properties:       a KeyValuesArray
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
 
         // process each key/value pair, <key=value>

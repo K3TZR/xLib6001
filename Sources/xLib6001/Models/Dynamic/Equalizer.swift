@@ -111,8 +111,8 @@ extension Equalizer: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
-        DispatchQueue.main.async {
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+//        DispatchQueue.main.async {
             var equalizer: Equalizer?
             
             // get the Type
@@ -131,7 +131,7 @@ extension Equalizer: DynamicModel {
                 // pass the key values to the Equalizer for parsing (dropping the Type)
                 equalizer.parseProperties( Array(properties.dropFirst(1)) )
             }
-        }
+//        }
     }
     
     /// Parse Equalizer key/value pairs
@@ -139,7 +139,7 @@ extension Equalizer: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
         
         // process each key/value pair, <key=value>

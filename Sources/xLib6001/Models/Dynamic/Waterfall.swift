@@ -136,7 +136,7 @@ extension Waterfall: DynamicModelWithStream {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // Format: <"waterfall", ""> <streamId, ""> <"x_pixels", value> <"center", value> <"bandwidth", value> <"line_duration", value>
         //          <"rfgain", value> <"rxant", value> <"wide", 1|0> <"loopa", 1|0> <"loopb", 1|0> <"band", value> <"daxiq", value>
         //          <"daxiq_rate", value> <"capacity", value> <"available", value> <"panadapter", streamId>=40000000 <"color_gain", value>
@@ -148,7 +148,7 @@ extension Waterfall: DynamicModelWithStream {
         //      OR
         // Format: <"waterfall", ""> <streamId, ""> <"daxiq", value> <"daxiq_rate", value> <"capacity", value> <"available", value>
 
-        DispatchQueue.main.async { 
+//        DispatchQueue.main.async {
             // get the Id
             if let id = properties[1].key.streamId {
                 // is the object in use?
@@ -182,7 +182,7 @@ extension Waterfall: DynamicModelWithStream {
                     }
                 }
             }
-        }
+//        }
     }
 
     /// Parse Waterfall key/value pairs
@@ -190,7 +190,7 @@ extension Waterfall: DynamicModelWithStream {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    func parseProperties(_ properties: KeyValuesArray) {
+    @MainActor func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
 
         // process each key/value pair, <key=value>

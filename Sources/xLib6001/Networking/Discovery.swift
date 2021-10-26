@@ -359,11 +359,13 @@ extension Discovery: GCDAsyncUdpSocketDelegate {
         let hosts     = packet.guiClientHosts.components(separatedBy: ",")
         let ips       = packet.guiClientIps.components(separatedBy: ",")
 
-        guard programs.count == handles.count && stations.count == handles.count && hosts.count == handles.count && ips.count == handles.count else { return guiClients }
+//        guard programs.count == handles.count && stations.count == handles.count && hosts.count == handles.count && ips.count == handles.count else { return guiClients }
+      guard programs.count == handles.count && stations.count == handles.count && ips.count == handles.count else { return guiClients }
 
         for i in 0..<handles.count {
             // valid handle, non-blank other fields?
-            if let handle = handles[i].handle, stations[i] != "", programs[i] != "" , hosts[i] != "", ips[i] != "" {
+//            if let handle = handles[i].handle, stations[i] != "", programs[i] != "" , hosts[i] != "", ips[i] != "" {
+          if let handle = handles[i].handle, stations[i] != "", programs[i] != "", ips[i] != "" {
 
                 guiClients.append( GuiClient(handle: handle,
                                              station: stations[i],

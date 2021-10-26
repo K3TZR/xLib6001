@@ -95,7 +95,7 @@ extension Atu: StaticModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    @MainActor func parseProperties(_ properties: KeyValuesArray) {
+    func parseProperties(_ properties: KeyValuesArray) {
 //        DispatchQueue.main.async { [self] in
             _suppress = true
 

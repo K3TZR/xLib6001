@@ -109,7 +109,7 @@ extension Xvtr: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true ) {
+    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true ) {
         // Format:  <id, > <name, > <"rf_freq", value> <"if_freq", value> <"lo_error", value> <"max_power", value>
         //              <"rx_gain",value> <"order", value> <"rx_only", 1|0> <"is_valid", 1|0> <"preferred", 1|0>
         //              <"two_meter_int", value>
@@ -149,7 +149,7 @@ extension Xvtr: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    @MainActor func parseProperties(_ properties: KeyValuesArray) {
+    func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
         
         // process each key/value pair, <key=value>

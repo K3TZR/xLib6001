@@ -460,7 +460,7 @@ extension Slice: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
 //        DispatchQueue.main.async {
             // get the Id
             if let id = properties[0].key.objectId {
@@ -495,7 +495,7 @@ extension Slice: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    @MainActor func parseProperties(_ properties: KeyValuesArray) {
+    func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
         
         // process each key/value pair, <key=value>

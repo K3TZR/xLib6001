@@ -149,7 +149,7 @@ extension UsbCable: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // TYPE: CAT
         //      <id, > <type, > <enable, > <pluggedIn, > <name, > <source, > <sourceTxAnt, > <sourceRxAnt, > <sourceSLice, >
         //      <autoReport, > <preamp, > <polarity, > <log, > <speed, > <dataBits, > <stopBits, > <parity, > <flowControl, >
@@ -199,7 +199,7 @@ extension UsbCable: DynamicModel {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    @MainActor func parseProperties(_ properties: KeyValuesArray) {
+    func parseProperties(_ properties: KeyValuesArray) {
         // TYPE: CAT
         //      <type, > <enable, > <pluggedIn, > <name, > <source, > <sourceTxAnt, > <sourceRxAnt, > <sourceSLice, > <autoReport, >
         //      <preamp, > <polarity, > <log, > <speed, > <dataBits, > <stopBits, > <parity, > <flowControl, >

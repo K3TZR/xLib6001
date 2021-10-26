@@ -107,7 +107,7 @@ extension DaxIqStream: DynamicModelWithStream {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // Format:  <streamId, > <"type", "dax_iq"> <"daxiq_channel", channel> <"pan", panStreamId> <"daxiq_rate", rate> <"client_handle", handle>
         
 //        DispatchQueue.main.async {
@@ -145,7 +145,7 @@ extension DaxIqStream: DynamicModelWithStream {
     ///
     /// - Parameter properties:       a KeyValuesArray
     ///
-    @MainActor func parseProperties(_ properties: KeyValuesArray) {
+    func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
 
         // process each key/value pair, <key=value>

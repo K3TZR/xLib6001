@@ -110,7 +110,7 @@ extension BandSetting: DynamicModel {
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
     ///
-    @MainActor class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    class func parseStatus(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // Format:  <band, > <bandId, > <"band_name", name> <"rfpower", power> <"tunepower", tunepower> <"hwalc_enabled", 0/1> <"inhinit", 0/1>
         //              OR
         //          <band, > <bandId, > <"band_name", name> <"acc_txreq_enabled", 0/1> <"rca_txreq_enabled", 0/1> <"acc_tx_enabled", 0/1> <"tx1_enabled", 0/1> <"tx2_enabled", 0/1> <"tx3_enabled", 0/1>
@@ -149,7 +149,7 @@ extension BandSetting: DynamicModel {
     /// Parse BandSetting key/value pairs
     ///   PropertiesParser Protocol method, , executes on the parseQ
     /// - Parameter properties:       a KeyValuesArray
-    @MainActor func parseProperties(_ properties: KeyValuesArray) {
+    func parseProperties(_ properties: KeyValuesArray) {
         _suppress = true
 
         // process each key/value pair, <key=value>

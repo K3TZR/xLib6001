@@ -43,7 +43,7 @@ final class NewApiTests: XCTestCase {
   
   private let bandSettingStatus_1 = "999 band_name=221 acc_txreq_enable=1 rca_txreq_enable=0 acc_tx_enabled=1 tx1_enabled=0 tx2_enabled=1 tx3_enabled=0"
   private let bandSettingRemove_1 = "999 removed"
-    @MainActor func testBandSettingParse_1() {
+    func testBandSettingParse_1() {
     let type = "BandSetting"
     let id = bandSettingStatus_1.components(separatedBy: " ")[0].objectId!
     
@@ -99,7 +99,7 @@ final class NewApiTests: XCTestCase {
   
   private var bandSettingStatus_2 = "998 band_name=WWV rfpower=50 tunepower=10 hwalc_enabled=1 inhibit=0"
   private let bandSettingRemove_2 = "998 removed"
-    @MainActor func testBandSettingParse_2() {
+    func testBandSettingParse_2() {
     let type = "BandSetting"
     let id = bandSettingStatus_2.components(separatedBy: " ")[0].objectId!
     
@@ -311,7 +311,7 @@ final class NewApiTests: XCTestCase {
   
   // Format:  <streamId, > <"type", "dax_iq"> <"daxiq_channel", channel> <"pan", panStreamId> <"daxiq_rate", rate> <"client_handle", handle>
   private var daxIqStreamStatus = "0x20000000 type=dax_iq daxiq_channel=3 pan=0x40000000 ip=10.0.1.107 daxiq_rate=48000"
-    @MainActor func testDaxIqParse() {
+    func testDaxIqParse() {
     let type = "DaxIqStream"
     let id = daxIqStreamStatus.components(separatedBy: " ").first!.streamId!
     var existingObjects = false
@@ -504,7 +504,7 @@ final class NewApiTests: XCTestCase {
   
   // Format:  <streamId, > <"type", "dax_mic"> <"client_handle", handle> <"ip", ipAddress>
   private var daxMicAudioStreamStatus = "0x04000008 type=dax_mic ip=192.168.1.162"
-    @MainActor func testDaxMicAudioStreamParse() {
+    func testDaxMicAudioStreamParse() {
     let type = "DaxMicAudioStream"
     let id = daxMicAudioStreamStatus.components(separatedBy: " ").first!.streamId!
     var existingObjects = false
@@ -675,7 +675,7 @@ final class NewApiTests: XCTestCase {
   
   // Format:  <streamId, > <"type", "dax_rx"> <"dax_channel", channel> <"slice", sliceLetter>  <"client_handle", handle> <"ip", ipAddress
   private var daxRxAudioStreamStatus = "0x04000008 type=dax_rx dax_channel=2 slice=A ip=192.168.1.162"
-    @MainActor func testDaxRxAudioParse() {
+    func testDaxRxAudioParse() {
     let type = "DaxRxAudioStream"
     let id = daxRxAudioStreamStatus.components(separatedBy: " ").first!.streamId!
     var existingObjects = false
@@ -855,7 +855,7 @@ final class NewApiTests: XCTestCase {
   
   // Format:  <streamId, > <"type", "dax_tx"> <"client_handle", handle> <"tx", isTransmitChannel>
   private var daxTxAudioStreamStatus = "0x0400000A type=dax_tx tx=1"
-    @MainActor func testDaxTxAudioParse() {
+    func testDaxTxAudioParse() {
     let type = "DaxTxAudioStream"
     let id = daxTxAudioStreamStatus.components(separatedBy: " ").first!.streamId!
     var existingObjects = false
@@ -1027,7 +1027,7 @@ final class NewApiTests: XCTestCase {
   // MARK: - RemoteRxAudioStream
   
   private var remoteRxAudioStreamStatus = "0x04000008 type=remote_audio_rx compression=NONE ip=192.168.1.162"
-    @MainActor func testRemoteRxAudioStreamParse() {
+    func testRemoteRxAudioStreamParse() {
     let type = "RemoteRxAudioStream"
     let id = remoteRxAudioStreamStatus.components(separatedBy: " ").first!.streamId!
     var existingObjects = false
@@ -1201,7 +1201,7 @@ final class NewApiTests: XCTestCase {
   
   private var remoteTxAudioStreamStatus_1 = "0x84000000 type=remote_audio_tx compression=none ip=192.168.1.162"
   private var remoteTxAudioStreamStatus_2 = "0x84000000 type=remote_audio_tx compression=opus ip=192.168.1.162"
-    @MainActor func testRemoteTxParseAudioStream_1() {
+    func testRemoteTxParseAudioStream_1() {
     let type = "RemoteTxAudioStream"
     let id = remoteTxAudioStreamStatus_1.components(separatedBy: " ").first!.streamId!
     var existingObjects = false
@@ -1266,7 +1266,7 @@ final class NewApiTests: XCTestCase {
     disconnect()
   }
   
-    @MainActor func testRemoteTxParseAudioStream_2() {
+    func testRemoteTxParseAudioStream_2() {
     let type = "RemoteTxAudioStream"
     let id = remoteTxAudioStreamStatus_2.components(separatedBy: " ").first!.streamId!
     var existingObjects = false

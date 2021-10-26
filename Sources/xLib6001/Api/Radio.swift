@@ -642,7 +642,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///
     /// - Parameters:
     ///   - commandSuffix:      a Command Suffix
-    @MainActor private func parseStatus(_ commandSuffix: String) {
+    private func parseStatus(_ commandSuffix: String) {
         // separate it into its components ( [0] = <apiHandle>, [1] = <remainder> )
         let components = commandSuffix.components(separatedBy: "|")
         
@@ -728,7 +728,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///   - radio:          the current Radio class
     ///   - queue:          a parse Queue for the object
     ///   - inUse:          false = "to be deleted"
-    @MainActor private func parseDisplay(_ radio: Radio, _ keyValues: KeyValuesArray, _ inUse: Bool = true) {
+    private func parseDisplay(_ radio: Radio, _ keyValues: KeyValuesArray, _ inUse: Bool = true) {
         switch keyValues[0].key {
         
         case DisplayTokens.panadapter.rawValue:  Panadapter.parseStatus(radio, keyValues, inUse)
@@ -745,7 +745,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///   - keyValues:      a KeyValuesArray
     ///   - radio:          the current Radio class
     ///   - remainder:      the text of the status mesage
-    @MainActor private func parseStream(_ radio: Radio, _ remainder: String) {
+    private func parseStream(_ radio: Radio, _ remainder: String) {
         let properties = remainder.keyValuesArray()
         
         // is the 1st KeyValue a StreamId?
@@ -789,7 +789,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///   - radio:          the current Radio class
     ///   - properties:     a KeyValuesArray
     ///   - inUse:          false = "to be deleted"
-    @MainActor private func parseInterlock(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    private func parseInterlock(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // is it a Band Setting?
         if properties[0].key == "band" {
             // YES, drop the "band", pass it to BandSetting
@@ -808,7 +808,7 @@ public final class Radio: Identifiable, ObservableObject {
     ///   - radio:          the current Radio class
     ///   - properties:     a KeyValuesArray
     ///   - inUse:          false = "to be deleted"
-    @MainActor private func parseTransmit(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
+    private func parseTransmit(_ radio: Radio, _ properties: KeyValuesArray, _ inUse: Bool = true) {
         // is it a Band Setting?
         if properties[0].key == "band" {
             // YES, drop the "band", pass it to BandSetting
